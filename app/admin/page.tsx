@@ -1,0 +1,108 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+
+export default function AdminPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const router = useRouter();
+
+  // 회원 목록 불러오기
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://127.0.0.1:8000/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+    } catch (err) {
+      alert("관리자만 들어올 수 있습니다.");
+      router.push("/dashboard");
+    }
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  // 정보 수정 (크레딧 충전 등)
+  const handleUpdate = async (userId: number, plan: string, credits: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`http://127.0.0.1:8000/admin/users/${userId}`, {
+        plan_type: plan,
+        credits: credits
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("수정 완료!");
+      fetchUsers();
+    } catch (err) {
+      alert("수정 실패");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-10">
+      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-8">
+        <div className="flex justify-between mb-6">
+          <h1 className="text-2xl font-bold">👑 관리자 페이지</h1>
+          <button onClick={() => router.push("/dashboard")} className="text-blue-500 underline">
+            서비스 화면으로
+          </button>
+        </div>
+
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="p-3">ID</th>
+              <th className="p-3">이메일</th>
+              <th className="p-3">미용실명</th>
+              <th className="p-3">등급</th>
+              <th className="p-3">크레딧</th>
+              <th className="p-3">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id} className="border-b hover:bg-gray-50">
+                <td className="p-3">{user.id}</td>
+                <td className="p-3">{user.email}</td>
+                <td className="p-3">{user.shop_name}</td>
+                <td className="p-3">
+                  <select 
+                    id={`plan-${user.id}`} 
+                    defaultValue={user.plan_type}
+                    className="border p-1 rounded"
+                  >
+                    <option value="free">Free</option>
+                    <option value="vip">VIP</option>
+                  </select>
+                </td>
+                <td className="p-3">
+                  <input 
+                    id={`credit-${user.id}`} 
+                    type="number" 
+                    defaultValue={user.credits} 
+                    className="border p-1 rounded w-16"
+                  />
+                </td>
+                <td className="p-3">
+                  <button 
+                    onClick={() => {
+                      const plan = (document.getElementById(`plan-${user.id}`) as HTMLSelectElement).value;
+                      const cred = (document.getElementById(`credit-${user.id}`) as HTMLInputElement).value;
+                      handleUpdate(user.id, plan, parseInt(cred));
+                    }}
+                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  >
+                    저장
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
