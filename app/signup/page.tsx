@@ -4,6 +4,10 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://127.0.0.1:8000"; // 로컬 개발 기본값
+
 export default function SignupPage() { // [중요] 함수 이름이 SignupPage입니다.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,11 +21,11 @@ export default function SignupPage() { // [중요] 함수 이름이 SignupPage�
 
     try {
       // [회원가입 API 호출]
-      await axios.post("https://hairfit-backend-production.up.railway.app/signup/", {
-        email: email,
-        password: password,
-        shop_name: shopName
-      });
+      await axios.post(`${API_URL}/signup/`, {
+  email: email,
+  password: password,
+  shop_name: shopName, // 백엔드에서 이 필드를 받도록 되어 있다면 그대로 유지
+});
 
       alert("가입 성공! 이제 로그인해주세요.");
       router.push("/"); // 로그인 페이지로 이동

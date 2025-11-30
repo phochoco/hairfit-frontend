@@ -6,6 +6,9 @@ import axios from "axios";
 import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react"; // Coins 아이콘 추가
 import { useRouter } from "next/navigation";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
   const [width, setWidth] = useState(500);
@@ -22,32 +25,47 @@ export default function Dashboard() {
   const canvasRef = useRef<any>(null);
   const router = useRouter();
 
+  // 👇 여기 추가
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("hairfit_token");
+      localStorage.removeItem("token");
+    }
+    router.push("/");
+  };
+
   // [NEW] 내 정보(크레딧) 불러오기 함수
   const fetchMyInfo = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+  try {
+    const token =
+      localStorage.getItem("hairfit_token") ||
+      localStorage.getItem("token"); // 둘 중 하나라도 있으면 사용
+    if (!token) return;
 
-      const res = await axios.get("https://hairfit-backend-production.up.railway.app/users/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCredits(res.data.credits);
-      setUserName(res.data.email.split("@")[0]); // 이메일 앞부분만 닉네임처럼 사용
-    } catch (err) {
-      console.error("정보 불러오기 실패", err);
-    }
-  };
+    const res = await axios.get(`${API_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setCredits(res.data.credits);
+    setUserName(res.data.email.split("@")[0]);
+  } catch (err) {
+    console.error("정보 불러오기 실패", err);
+  }
+};
 
   // 페이지 로드 시 실행
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      router.push("/");
-    } else {
-      fetchMyInfo();
-    }
-  }, []);
+  const token =
+    localStorage.getItem("hairfit_token") ||
+    localStorage.getItem("token");
+
+  if (!token) {
+    alert("로그인이 필요합니다.");
+    router.push("/");
+  } else {
+    fetchMyInfo();
+  }
+}, [router]);
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,32 +89,36 @@ export default function Dashboard() {
     }
   };
 
+  // ⬇⬇⬇ **여기가 핵심**: handleGenerate 함수 전체를 Dashboard 컴포넌트 안, return 위에 넣어줘야 해
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
-    if (credits <= 0) return alert("크레딧이 부족합니다!"); // 프론트에서도 한번 막아줌
+    if (credits <= 0) return alert("크레딧이 부족합니다!");
 
     setLoading(true);
 
     try {
       const maskData = canvasRef.current.getDataURL("image/png", false, "#000000");
-      const token = localStorage.getItem("token");
+      const token =
+  localStorage.getItem("hairfit_token") ||
+  localStorage.getItem("token");
 
-      const response = await axios.post("https://hairfit-backend-production.up.railway.app/generate/", {
-        image_url: image,
-        mask_url: maskData,
-        gender: gender,
-        age: age
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+
+      const response = await axios.post(
+  `${API_URL}/generate/`,
+  {
+    image_url: image,
+    mask_url: maskData,
+    gender,
+    age,
+  },
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
 
       setResult(response.data.result_url);
-      
-      // [NEW] 성공 시 크레딧 갱신 (서버에서 남은 크레딧을 보내주므로 그걸로 업데이트)
       setCredits(response.data.remaining_credits);
-      
       alert("변환 성공!");
-
     } catch (error) {
       console.error(error);
       alert("변환 실패. 잠시 후 다시 시도해주세요.");
@@ -104,6 +126,8 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+  // ⬆⬆⬆ 여기까지가 handleGenerate
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -122,9 +146,12 @@ export default function Dashboard() {
             안녕하세요, <b>{userName}</b> 원장님
           </div>
 
-          <button onClick={() => router.push("/")} className="text-gray-400 hover:text-red-500 flex items-center gap-2 text-sm">
-            <LogOut size={18} /> 로그아웃
-          </button>
+          <button
+  onClick={handleLogout}
+  className="text-gray-400 hover:text-red-500 flex items-center gap-2 text-sm"
+>
+  <LogOut size={18} /> 로그아웃
+</button>
         </div>
       </nav>
 
