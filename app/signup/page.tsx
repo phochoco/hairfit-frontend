@@ -3,6 +3,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // [NEW] 링크 기능 가져오기
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,11 +16,11 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Railway 백엔드 주소로 로그인 요청
       const formData = new URLSearchParams();
       formData.append("username", email);
       formData.append("password", password);
 
+      // [주의] 여기에 Railway 백엔드 주소가 정확히 있는지 확인하세요!
       const response = await axios.post("https://hairfit-backend-production.up.railway.app/token", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
@@ -77,16 +78,13 @@ export default function LoginPage() {
           </button>
         </form>
         
-        {/* 👇 여기가 수정된 부분입니다 (클릭하면 회원가입 페이지로 이동) */}
-        <p className="mt-4 text-center text-sm text-gray-500">
+        {/* 👇 [수정됨] Link 태그 사용: 무조건 이동합니다 */}
+        <div className="mt-4 text-center text-sm text-gray-500">
           아직 회원이 아니신가요?{" "}
-          <span 
-            onClick={() => router.push("/signup")} 
-            className="text-blue-600 cursor-pointer font-bold hover:underline"
-          >
+          <Link href="/signup" className="text-blue-600 font-bold hover:underline cursor-pointer">
             회원가입
-          </span>
-        </p>
+          </Link>
+        </div>
       </div>
     </div>
   );
