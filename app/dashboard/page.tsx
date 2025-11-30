@@ -28,7 +28,7 @@ export default function Dashboard() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await axios.get("http://127.0.0.1:8000/users/me", {
+      const res = await axios.get("https://hairfit-backend-production.up.railway.app/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCredits(res.data.credits);
@@ -81,7 +81,7 @@ export default function Dashboard() {
       const maskData = canvasRef.current.getDataURL("image/png", false, "#000000");
       const token = localStorage.getItem("token");
 
-      const response = await axios.post("http://127.0.0.1:8000/generate/", {
+      const response = await axios.post("https://hairfit-backend-production.up.railway.app/generate/", {
         image_url: image,
         mask_url: maskData,
         gender: gender,

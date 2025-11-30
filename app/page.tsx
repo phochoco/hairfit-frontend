@@ -20,7 +20,7 @@ export default function LoginPage() {
       formData.append("username", email);
       formData.append("password", password);
 
-      const response = await axios.post("http://127.0.0.1:8000/token", formData, {
+      const response = await axios.post("https://hairfit-backend-production.up.railway.app/token", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 

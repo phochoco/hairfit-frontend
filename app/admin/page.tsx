@@ -12,7 +12,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://127.0.0.1:8000/admin/users", {
+      const res = await axios.get("https://hairfit-backend-production.up.railway.app/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(res.data);
@@ -28,7 +28,7 @@ export default function AdminPage() {
   const handleUpdate = async (userId: number, plan: string, credits: number) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`http://127.0.0.1:8000/admin/users/${userId}`, {
+      await axios.put(`https://hairfit-backend-production.up.railway.app/admin/users/${userId}`, {
         plan_type: plan,
         credits: credits
       }, {
