@@ -3,55 +3,53 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // [NEW] 링크 기능 가져오기
 
-export default function LoginPage() {
+export default function SignupPage() { // [중요] 함수 이름이 SignupPage입니다.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [shopName, setShopName] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const formData = new URLSearchParams();
-      formData.append("username", email);
-      formData.append("password", password);
-
-      // [주의] 여기에 Railway 백엔드 주소가 정확히 있는지 확인하세요!
-      const response = await axios.post("https://hairfit-backend-production.up.railway.app/token", formData, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      // [회원가입 API 호출]
+      await axios.post("https://hairfit-backend-production.up.railway.app/signup/", {
+        email: email,
+        password: password,
+        shop_name: shopName
       });
 
-      const token = response.data.access_token;
-      localStorage.setItem("token", token);
-      
-      alert("로그인 성공! 원장님 환영합니다.");
-      router.push("/dashboard"); 
+      alert("가입 성공! 이제 로그인해주세요.");
+      router.push("/"); // 로그인 페이지로 이동
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("이메일이나 비밀번호가 틀렸습니다.");
+      if (err.response && err.response.status === 400) {
+        setError("이미 등록된 이메일입니다.");
+      } else {
+        setError("가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">HairFit AI</h1>
-        <p className="text-center text-gray-500 mb-8">미용실 고객 스타일링 솔루션</p>
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">회원가입</h1> {/* [제목 확인] */}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4"> {/* [함수 확인] */}
           <div>
             <label className="block text-sm font-medium text-gray-700">아이디 (이메일)</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="salon@example.com"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="example@hairfit.com"
               required
             />
           </div>
@@ -62,9 +60,20 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="••••••••"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="8자 이상 입력"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">미용실 이름</label>
+            <input
+              type="text"
+              value={shopName}
+              onChange={(e) => setShopName(e.target.value)}
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="헤어핏 살롱"
             />
           </div>
 
@@ -72,19 +81,15 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-200"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition"
           >
-            로그인
+            가입하기
           </button>
         </form>
         
-        {/* 👇 [수정됨] Link 태그 사용: 무조건 이동합니다 */}
-        <div className="mt-4 text-center text-sm text-gray-500">
-          아직 회원이 아니신가요?{" "}
-          <Link href="/signup" className="text-blue-600 font-bold hover:underline cursor-pointer">
-            회원가입
-          </Link>
-        </div>
+        <p className="mt-4 text-center text-sm text-gray-500">
+          이미 계정이 있으신가요? <span onClick={() => router.push("/")} className="text-blue-600 cursor-pointer font-bold hover:underline">로그인</span>
+        </p>
       </div>
     </div>
   );
