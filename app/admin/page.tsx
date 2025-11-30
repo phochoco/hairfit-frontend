@@ -1,72 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-// ✅ 백엔드 베이스 URL (환경변수 우선, 없으면 Railway 기본값)
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://hairfit-backend-production.up.railway.app";
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // ✅ 회원 목록 불러오기 (관리자 인증 후)
+  // ✅ 공통 토큰 가져오기 함수
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+    return (
+      localStorage.getItem("hairfit_token") || localStorage.getItem("token")
+    );
+  };
+
+  // ✅ 회원 목록 불러오기
   const fetchUsers = async () => {
     try {
-      const token =
-        (typeof window !== "undefined" &&
-          (localStorage.getItem("hairfit_token") ||
-            localStorage.getItem("token"))) ||
-        null;
-
+      const token = getToken();
       if (!token) {
         alert("로그인이 필요합니다.");
         router.push("/");
         return;
       }
 
-      // 1) 내 정보 조회 → 관리자 여부 확인
-      const meRes = await axios.get(`${API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (meRes.data.role !== "admin") {
-        alert("관리자만 들어올 수 있습니다.");
-        router.push("/");
-        return;
-      }
-
-      // 2) 전체 회원 목록 조회
       const res = await axios.get(`${API_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setUsers(res.data);
-    } catch (err) {
-      console.error(err);
-      alert("관리자만 들어올 수 있습니다.");
-      router.push("/");
+    } catch (err: any) {
+      console.error("admin/users 에러:", err?.response?.status, err?.response?.data);
+
+      const status = err?.response?.status;
+
+      if (status === 401) {
+        alert("인증이 만료되었습니다. 다시 로그인해 주세요.");
+        router.push("/");
+      } else if (status === 403) {
+        alert("관리자만 들어올 수 있습니다.");
+        router.push("/dashboard");
+      } else {
+        alert("관리자 페이지 로딩에 실패했습니다.");
+        router.push("/dashboard");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchUsers();
-  }, [router]);
+  }, []);
 
-  // ✅ 정보 수정 (크레딧 / 등급 등)
+  // ✅ 정보 수정 (크레딧/등급 변경)
   const handleUpdate = async (userId: number, plan: string, credits: number) => {
     try {
-      const token =
-        (typeof window !== "undefined" &&
-          (localStorage.getItem("hairfit_token") ||
-            localStorage.getItem("token"))) ||
-        null;
-
+      const token = getToken();
       if (!token) {
-        alert("로그인이 필요합니다.");
+        alert("다시 로그인해 주세요.");
         router.push("/");
         return;
       }
@@ -85,10 +83,14 @@ export default function AdminPage() {
       alert("수정 완료!");
       fetchUsers();
     } catch (err) {
-      console.error(err);
+      console.error("admin update error:", err);
       alert("수정 실패");
     }
   };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-10">
@@ -119,8 +121,7 @@ export default function AdminPage() {
               <tr key={user.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{user.id}</td>
                 <td className="p-3">{user.email}</td>
-                {/* 스키마에 따라 shop_name / salon_name 중 하나 사용 */}
-                <td className="p-3">{user.shop_name || user.salon_name}</td>
+                <td className="p-3">{user.shop_name}</td>
                 <td className="p-3">
                   <select
                     id={`plan-${user.id}`}
@@ -136,7 +137,7 @@ export default function AdminPage() {
                     id={`credit-${user.id}`}
                     type="number"
                     defaultValue={user.credits}
-                    className="border p-1 rounded w-16"
+                    className="border p-1 rounded w-20"
                   />
                 </td>
                 <td className="p-3">
@@ -152,7 +153,7 @@ export default function AdminPage() {
                           `credit-${user.id}`
                         ) as HTMLInputElement
                       ).value;
-                      handleUpdate(user.id, plan, parseInt(cred, 10));
+                      handleUpdate(user.id, plan, parseInt(cred || "0", 10));
                     }}
                     className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                   >
