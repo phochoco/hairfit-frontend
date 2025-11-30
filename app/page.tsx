@@ -1,38 +1,31 @@
 "use client";
 
-import { useState } from "react";
 import axios from "axios";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// ✅ 공통 백엔드 URL
+// ✅ 공통 백엔드 URL (환경변수 우선, 없으면 Railway)
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://hairfit-backend-production.up.railway.app";
 
-const response = await axios.post(
-  `${API_URL}/token`,
-  formData,
-  {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  }
-);
+export default function Home() {
+  const router = useRouter();
 
-export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
+      // ✅ 여기서 formData 생성
       const formData = new URLSearchParams();
       formData.append("username", email);
       formData.append("password", password);
 
-      // 🔥 하드코딩 대신 API_URL 사용
       const response = await axios.post(
         `${API_URL}/token`,
         formData,
@@ -43,21 +36,17 @@ export default function LoginPage() {
 
       const token = response.data.access_token;
 
-      // 🔥 토큰 키 이름 통일 (hairfit_token)
-      localStorage.setItem("hairfit_token", token);
-      localStorage.setItem("hairfit_email", email);
+      // ✅ 토큰/이메일 저장 (대시보드/관리자에서 공통 사용)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("hairfit_token", token);
+        localStorage.setItem("hairfit_email", email);
+      }
 
       alert("로그인 성공! 원장님 환영합니다.");
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-
-      // 상태 코드에 따라 메시지 분리도 가능 (선택)
-      if (err.response?.status === 401) {
-        setError("이메일이나 비밀번호가 틀렸습니다.");
-      } else {
-        setError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-      }
+      setError("이메일이나 비밀번호가 틀렸습니다.");
     }
   };
 
