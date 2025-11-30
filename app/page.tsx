@@ -3,7 +3,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+// Link 컴포넌트는 제거했습니다.
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,7 +16,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // 1. 백엔드(8000번)에 로그인 요청
       const formData = new URLSearchParams();
       formData.append("username", email);
       formData.append("password", password);
@@ -25,13 +24,10 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      // 2. 성공하면 토큰 저장
       const token = response.data.access_token;
       localStorage.setItem("token", token);
       
       alert("로그인 성공! 원장님 환영합니다.");
-      
-      // [수정됨] 이제 대시보드로 이동합니다! 🚀
       router.push("/dashboard"); 
 
     } catch (err) {
@@ -81,8 +77,15 @@ export default function LoginPage() {
           </button>
         </form>
         
+        {/* 👇 [최종 수정] Link 대신 span + onClick으로 강제 이동합니다. */}
         <p className="mt-4 text-center text-sm text-gray-500">
-          아직 회원이 아니신가요? <span className="text-blue-600 cursor-pointer">회원가입</span>
+          아직 회원이 아니신가요?{" "}
+          <span 
+            onClick={() => router.push("/signup")} 
+            className="text-blue-600 cursor-pointer font-bold hover:underline"
+          >
+            회원가입
+          </span>
         </p>
       </div>
     </div>
