@@ -4,9 +4,11 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://127.0.0.1:8000"; // 로컬 개발 기본값
+await axios.post(`${API_URL}/signup/`, {
+  email,
+  password,
+  shop_name: shopName,
+});
 
 export default function SignupPage() { // [중요] 함수 이름이 SignupPage입니다.
   const [email, setEmail] = useState("");

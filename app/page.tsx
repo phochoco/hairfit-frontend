@@ -4,9 +4,13 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://127.0.0.1:8000"; // 로컬 개발용 기본값
+const response = await axios.post(
+  `${API_URL}/token`,
+  formData,
+  {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  }
+);
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
