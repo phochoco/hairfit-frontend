@@ -4,6 +4,11 @@ import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
+// ✅ 공통 백엔드 URL
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://hairfit-backend-production.up.railway.app";
+
 const response = await axios.post(
   `${API_URL}/token`,
   formData,
