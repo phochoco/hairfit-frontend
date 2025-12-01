@@ -175,7 +175,7 @@ export default function Dashboard() {
             {userEmail && (
               <div className="text-xs text-gray-400">{userEmail}</div>
             )}
-          </div> // 추가한 내용
+          </div>
             <button
               onClick={handleLogout}
               className="text-gray-400 hover:text-red-500 flex items-center gap-2"
