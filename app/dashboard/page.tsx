@@ -6,6 +6,13 @@ import axios from "axios";
 import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+<button
+  onClick={() => router.push("/mypage")}
+  className="text-sm text-blue-600 hover:text-blue-800 underline"
+>
+  내 생성내역
+</button>
+
 // ✅ 백엔드 URL 한 번만 정의
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
