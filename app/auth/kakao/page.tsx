@@ -30,10 +30,9 @@ export default function KakaoAuthPage() {
       try {
         setStatus("카카오 로그인 처리 중입니다...");
 
-        const res = await axios.get(`${API_URL}/auth/kakao/callback`, {
-          params: { code },
+        const res = await axios.post(`${API_URL}/auth/kakao`, {
+         code,
         });
-
         const token = res.data.access_token;
         const email = res.data.email;
 
