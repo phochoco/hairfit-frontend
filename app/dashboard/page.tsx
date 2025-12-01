@@ -179,14 +179,24 @@ export default function Dashboard() {
     </span>
     <span className="font-medium">나의 이용 내역</span>
   </button>
-            <div className="text-gray-600">
-              <div>
-              안녕하세요, <b>{userName}</b> 원장님
-            </div>
-            {userEmail && (
-              <div className="text-xs text-gray-400">{userEmail}</div>
-            )}
-          </div>
+            {/* 사용자 정보: 심플 & 임팩트 */}
+  <div className="flex flex-col">
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-gray-900">
+        {user?.shop_name || user?.email} 원장님
+      </span>
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-[11px] font-medium text-purple-600 border border-purple-100">
+        {user?.plan_type?.toUpperCase() || "FREE"} 플랜
+      </span>
+    </div>
+
+    {/* 이메일은 아주 연하게, 필요 없으면 이 줄 자체를 지워도 됨 */}
+    {user?.email && (
+      <span className="text-[11px] text-gray-400">
+        {user.email}
+      </span>
+    )}
+  </div>
             <button
               onClick={handleLogout}
               className="text-gray-400 hover:text-red-500 flex items-center gap-2"
