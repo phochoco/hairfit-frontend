@@ -26,8 +26,8 @@ type GenerationLog = {
 };
 
 type StatSummary = {
-  today: number;       // /admin/generation-stats 용
-  this_week: number;   // /admin/generation-stats 용
+  today: number; // /admin/generation-stats 용
+  this_week: number; // /admin/generation-stats 용
 };
 
 export default function AdminPage() {
@@ -123,6 +123,28 @@ export default function AdminPage() {
     } catch (err) {
       console.error("회원 수정 실패", err);
       alert("수정 실패");
+    }
+  };
+
+  // -------- 회원 삭제 --------
+  const handleDeleteUser = async (userId: number) => {
+    const ok = confirm("정말 이 회원을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      const token = getToken();
+      if (!token) throw new Error("no token");
+
+      await axios.delete(`${API_URL}/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 프론트 목록에서 제거
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      alert("삭제되었습니다.");
+    } catch (err) {
+      console.error("회원 삭제 실패", err);
+      alert("삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -310,7 +332,7 @@ export default function AdminPage() {
                         className="border p-1 rounded w-20 text-xs"
                       />
                     </td>
-                    <td className="p-2">
+                    <td className="p-2 space-x-2">
                       <button
                         onClick={() => {
                           const plan = (
@@ -329,6 +351,12 @@ export default function AdminPage() {
                         className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
                       >
                         저장
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(u.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
+                      >
+                        삭제
                       </button>
                     </td>
                   </tr>

@@ -143,15 +143,19 @@ export default function Home() {
           </button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          아직 회원이 아니신가요?{" "}
-          <span
-            onClick={() => router.push("/signup")}
-            className="text-blue-600 cursor-pointer font-bold hover:underline"
-          >
-            회원가입
-          </span>
-        </p>
+        {/* 일반 회원용 회원가입은 숨김 */}
+{/*
+<p className="mt-4 text-center text-sm text-gray-500">
+  아직 회원이 아니신가요?{" "}
+  <span
+    onClick={() => router.push("/signup")}
+    className="text-blue-600 cursor-pointer font-bold hover:underline"
+  >
+    회원가입
+  </span>
+</p>
+*/}
+
       </div>
     </div>
   );
