@@ -186,7 +186,7 @@ export default function Dashboard() {
         {/* 왼쪽: 작업 공간 */}
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            1. 사진 업로드 -> 변경할 부분 색칠
+            1. 사진 업로드 & 변경할 부분 색칠
           </h2>
 
           <div className="mb-4">
