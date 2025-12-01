@@ -146,7 +146,7 @@ export default function PricingPage() {
               HairFit 요금제
             </h1>
             <p className="text-gray-500 mt-2">
-              생성형 AI 헤어 시안을 안전하게 테스트해 볼 수 있는 크레딧 기반 요금제입니다.
+              “헤어는 그대로, 얼굴만 AI로 안전하게 생성합니다. 초상권 부담 없이 자유롭게 활용할 수 있는 스타일링 이미지 서비스입니다.”
             </p>
           </div>
           <button
