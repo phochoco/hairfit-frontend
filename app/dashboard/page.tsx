@@ -161,37 +161,50 @@ export default function Dashboard() {
           </div>
 
           {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
-          <div className="flex flex-wrap items-center gap-3 text-sm md:text-base">
-               {/* 요금제 메뉴 */}
+          <div className="flex items-center gap-3">
+
+  {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition"
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 transition"
   >
-    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-white text-[11px] font-bold">
-    </span>
-    <span className="font-medium">크레딧 충전</span>
+    <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+    <span>크레딧 충전</span>
   </button>
-              <button
+
+  {/* 나의 이용 내역 */}
+  <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-xs md:text-sm text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition"
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
   >
-    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-[10px]">
-    </span>
-    <span className="font-medium">나의 이용 내역</span>
+    <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
+    <span>나의 이용 내역</span>
   </button>
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm hover:bg-purple-100 transition">
-  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-  <span>{user?.plan_type.toUpperCase()} 플랜</span>
-</button>
+
+  {/* 현재 플랜 pill */}
+  <button
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm"
+  >
+    <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+    <span>{user?.plan_type?.toUpperCase() ?? "FREE"} 플랜</span>
+  </button>
+
+  {/* 작은 배지 문구 */}
+  <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-[11px] font-medium">
+    오늘도 멋진 스타일링을 만들어봐요
+  </span>
+
+  {/* 로그아웃 pill */}
+  <button
+    onClick={logout}
+    className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition"
+  >
+    <span className="text-sm">↪</span>
+    <span>로그아웃</span>
+  </button>
+
 </div>
-           <button
-  onClick={logout}
-  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition"
->
-  <span className="text-sm">↪</span>
-  <span>로그아웃</span>
-</button>
-          </div>
+
         </div>
       </nav>
 
