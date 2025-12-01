@@ -170,6 +170,7 @@ export default function Dashboard() {
             </button>
 
             <div className="text-gray-600">
+              <div>
               안녕하세요, <b>{userName}</b> 원장님
             </div>
             {userEmail && (
