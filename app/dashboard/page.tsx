@@ -162,12 +162,20 @@ export default function Dashboard() {
 
           {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
           <div className="flex flex-wrap items-center gap-3 text-sm md:text-base">
+               {/* 요금제 메뉴 */}
+  <button
+    onClick={() => router.push("/pricing")}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition"
+  >
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-white text-[11px] font-bold">
+    </span>
+    <span className="font-medium">크레딧 충전</span>
+  </button>
               <button
     onClick={() => router.push("/mypage")}
     className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-xs md:text-sm text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition"
   >
     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-[10px]">
-      ℹ
     </span>
     <span className="font-medium">나의 이용 내역</span>
   </button>
