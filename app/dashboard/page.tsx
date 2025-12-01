@@ -181,13 +181,13 @@ export default function Dashboard() {
     <span>나의 이용 내역</span>
   </button>
 
-  {/* 현재 플랜 pill */}
-  <button
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm"
-  >
-    <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-    <span>{user?.plan_type?.toUpperCase() ?? "FREE"} 플랜</span>
-  </button>
+  {/* 현재 플랜 pill (심플 버전, user 사용 안 함) */}
+<button
+  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm"
+>
+  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+  <span>현재 플랜</span>
+</button>
 
   {/* 작은 배지 문구 */}
   <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-[11px] font-medium">
