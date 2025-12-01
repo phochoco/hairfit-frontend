@@ -15,7 +15,7 @@ export default function Home() {
   // ✅ 카카오 로그인 시작
   const handleKakaoLogin = async () => {
     try {
-      const res = await axios.get(`${API_URL}/auth/kakao/login-url`);
+      const res = await axios.get(`${API_URL}/auth/kakao/login`);
       const url = res.data.url || res.data.redirect_url;
 
       if (!url) {
