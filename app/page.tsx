@@ -15,7 +15,7 @@ export default function Home() {
   // ✅ 카카오 로그인 시작
   const handleKakaoLogin = async () => {
     try {
-      const res = await axios.get(`${API_URL}/auth/kakao/login`);
+      const res = await axios.get(`${API_URL}/auth/kakao/login-url`);
       const url = res.data.url || res.data.redirect_url;
 
       if (!url) {
@@ -76,7 +76,7 @@ export default function Home() {
           HairFit AI
         </h1>
         <p className="text-center text-gray-500 mb-8">
-          미용실 고객 스타일링 솔루션
+          미용실 고객사진 초상권 솔루션
         </p>
 
         {/* ✅ 이메일/비밀번호 로그인 */}
