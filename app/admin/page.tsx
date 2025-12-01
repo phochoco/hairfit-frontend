@@ -11,8 +11,9 @@ type User = {
   id: number;
   email: string;
   shop_name?: string | null;
-  plan_type: string;
+  plan_type?: string | null;
   credits: number;
+  role?: string | null;
 };
 
 type GenerationLog = {
@@ -26,8 +27,8 @@ type GenerationLog = {
 };
 
 type StatSummary = {
-  today: number; // /admin/generation-stats 용
-  this_week: number; // /admin/generation-stats 용
+  today: number;
+  this_week: number;
 };
 
 export default function AdminPage() {
@@ -38,6 +39,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState<StatSummary | null>(null);
   const [searchEmail, setSearchEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [savingUserId, setSavingUserId] = useState<number | null>(null);
 
   const getToken = () =>
     (typeof window !== "undefined" &&
@@ -45,7 +49,7 @@ export default function AdminPage() {
         localStorage.getItem("token"))) ||
     "";
 
-  // -------- API 호출들 --------
+  // ---------- API: 회원 목록 ----------
   const fetchUsers = async () => {
     try {
       const token = getToken();
@@ -55,17 +59,32 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(res.data || []);
-    } catch (err) {
+      setIsAdmin(true);
+    } catch (err: any) {
       console.error("유저 목록 불러오기 실패", err);
-      alert("관리자만 들어올 수 있습니다.");
-      router.push("/dashboard");
+
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 403) {
+          setIsAdmin(false);
+          setError("관리자 권한이 없습니다.");
+        } else if (err.response?.status === 401) {
+          setError("로그인이 필요합니다.");
+          router.push("/");
+        } else {
+          setError("유저 목록을 불러오지 못했습니다.");
+        }
+      } else {
+        setError("알 수 없는 오류가 발생했습니다.");
+      }
     }
   };
 
+  // ---------- API: 통계 + 생성 로그 ----------
   const fetchStatsAndLogs = async (emailFilter?: string) => {
     try {
       const token = getToken();
       if (!token) throw new Error("no token");
+
       const headers = { Authorization: `Bearer ${token}` };
 
       // 오늘/이번주 통계
@@ -75,8 +94,8 @@ export default function AdminPage() {
       );
       setStats(statsRes.data);
 
-      // 생성 로그
-      const logsRes = await axios.get(`${API_URL}/admin/generations`, {
+      // 생성 로그 (v2: /admin/generation-logs, { items: [...] } 반환)
+      const logsRes = await axios.get(`${API_URL}/admin/generation-logs`, {
         headers,
         params: {
           user_email: emailFilter || undefined,
@@ -85,108 +104,188 @@ export default function AdminPage() {
         },
       });
 
-      // 백엔드가 { items: [...] } 형식이기 때문에 방어적으로 처리
-      const raw = (logsRes.data as any) || {};
-      const items: GenerationLog[] = Array.isArray(raw.items)
+      const raw = logsRes.data as any;
+      const items: GenerationLog[] = Array.isArray(raw?.items)
         ? raw.items
-        : Array.isArray(raw)
-        ? raw
         : [];
       setLogs(items);
     } catch (err) {
       console.error("생성 로그/통계 불러오기 실패", err);
-      // 관리자 권한 없으면 여기서도 튕김
+      // 여기서는 에러만 콘솔에, 상단 error는 유저 목록에서 처리
     }
   };
 
-  const handleUpdateUser = async (
-    userId: number,
-    planType: string,
-    credits: number
-  ) => {
-    try {
-      const token = getToken();
-      if (!token) throw new Error("no token");
+  // ---------- 회원 정보(플랜/크레딧) 수정 ----------
+  const handleUpdateUser = async (user: User) => {
+    const token = getToken();
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      router.push("/");
+      return;
+    }
 
+    const planSelect = document.getElementById(
+      `plan-${user.id}`
+    ) as HTMLSelectElement | null;
+    const creditInput = document.getElementById(
+      `credit-${user.id}`
+    ) as HTMLInputElement | null;
+
+    if (!planSelect || !creditInput) return;
+
+    const newPlan = planSelect.value;
+    const creditStr = creditInput.value;
+    const newCredits = parseInt(creditStr || "0", 10);
+
+    if (Number.isNaN(newCredits) || newCredits < 0) {
+      alert("크레딧은 0 이상의 숫자로 입력해 주세요.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `${user.email}\n플랜: ${user.plan_type || "없음"} → ${newPlan}\n크레딧: ${
+          user.credits
+        } → ${newCredits}\n\n이대로 저장할까요?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setSavingUserId(user.id);
       await axios.put(
-        `${API_URL}/admin/users/${userId}`,
+        `${API_URL}/admin/users/${user.id}`,
         {
-          plan_type: planType,
-          credits,
+          plan_type: newPlan,
+          credits: newCredits,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      alert("수정 완료!");
-      await Promise.all([fetchUsers(), fetchStatsAndLogs(searchEmail)]);
+
+      // 프론트 상태 갱신
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, plan_type: newPlan, credits: newCredits }
+            : u
+        )
+      );
+      alert("회원 정보가 저장되었습니다.");
     } catch (err) {
       console.error("회원 수정 실패", err);
-      alert("수정 실패");
+      alert("회원 정보를 저장하는 중 오류가 발생했습니다.");
+    } finally {
+      setSavingUserId(null);
     }
   };
 
-  // -------- 회원 삭제 --------
-  const handleDeleteUser = async (userId: number) => {
-    const ok = confirm("정말 이 회원을 삭제하시겠습니까?");
+  // ---------- 회원 삭제 ----------
+  const handleDeleteUser = async (user: User) => {
+    const ok = confirm(
+      `${user.email} 계정을 정말 삭제하시겠습니까?\n(생성 로그 등 관련 데이터도 함께 영향 받을 수 있습니다.)`
+    );
     if (!ok) return;
 
-    try {
-      const token = getToken();
-      if (!token) throw new Error("no token");
+    const token = getToken();
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      router.push("/");
+      return;
+    }
 
-      await axios.delete(`${API_URL}/admin/users/${userId}`, {
+    try {
+      setSavingUserId(user.id);
+      await axios.delete(`${API_URL}/admin/users/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // 프론트 목록에서 제거
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-      alert("삭제되었습니다.");
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      alert("회원이 삭제되었습니다.");
     } catch (err) {
       console.error("회원 삭제 실패", err);
-      alert("삭제 중 오류가 발생했습니다.");
+      alert("회원 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setSavingUserId(null);
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearchLogs = async () => {
     await fetchStatsAndLogs(searchEmail.trim() || undefined);
   };
 
+  // ---------- 초기 로딩 ----------
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([fetchUsers(), fetchStatsAndLogs()]);
+      await fetchUsers();
+      await fetchStatsAndLogs();
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) {
+  // ---------- 상태별 화면 ----------
+
+  if (loading && isAdmin === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 text-sm">관리자 페이지 로딩 중...</div>
+        <p className="text-gray-500 text-sm">관리자 페이지 로딩 중...</p>
+      </div>
+    );
+  }
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center space-y-3">
+          <h1 className="text-xl font-bold text-gray-900">관리자 권한 없음</h1>
+          <p className="text-sm text-gray-500">
+            이 페이지는 관리자 전용입니다. 관리자 계정으로 다시 로그인해 주세요.
+          </p>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="mt-4 w-full py-2 rounded-xl bg-gray-900 text-white text-sm"
+          >
+            대시보드로 돌아가기
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-10">
+    <div className="min-h-screen bg-gray-100 p-6 md:p-10">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* 상단 헤더 */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <span>👑 관리자 페이지</span>
-          </h1>
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              👑 HairFit 관리자 페이지
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              회원 크레딧 / 플랜 / 생성 로그를 한 눈에 관리하는 어드민 콘솔입니다.
+            </p>
+          </div>
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-blue-500 underline"
+            className="text-sm text-blue-600 underline"
           >
-            서비스 화면으로
+            ← 대시보드로 돌아가기
           </button>
-        </div>
+        </header>
 
-        {/* 오늘/이번주 통계 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        )}
+
+        {/* 통계 카드 + 로그 검색 */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl shadow p-4">
             <div className="text-sm text-gray-500 mb-1">오늘 생성 건수</div>
             <div className="text-3xl font-bold text-blue-600">
@@ -200,33 +299,31 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between">
-            <div>
-              <div className="text-sm text-gray-500 mb-1">로그 검색</div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="이메일 일부 입력"
-                  value={searchEmail}
-                  onChange={(e) => setSearchEmail(e.target.value)}
-                  className="flex-1 border rounded-lg px-2 py-1 text-sm"
-                />
-                <button
-                  onClick={handleSearch}
-                  className="px-3 py-1 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  검색
-                </button>
-              </div>
+            <div className="text-sm text-gray-500 mb-2">생성 로그 이메일 검색</div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="이메일 일부 입력"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                className="flex-1 border rounded-lg px-2 py-1 text-sm"
+              />
+              <button
+                onClick={handleSearchLogs}
+                className="px-3 py-1 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700"
+              >
+                검색
+              </button>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* 생성 로그 테이블 */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <section className="bg-white rounded-xl shadow p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">최근 생성 로그</h2>
+            <h2 className="font-semibold text-gray-800">최근 생성 로그</h2>
             <span className="text-xs text-gray-400">
-              최대 100건까지 표시됩니다.
+              /admin/generation-logs 기준 최대 100건 표시
             </span>
           </div>
           <div className="overflow-x-auto">
@@ -259,7 +356,7 @@ export default function AdminPage() {
                     <td className="p-2">{log.shop_name || "-"}</td>
                     <td className="p-2 text-xs text-gray-500">
                       {log.created_at
-                        ? new Date(log.created_at).toLocaleString()
+                        ? new Date(log.created_at).toLocaleString("ko-KR")
                         : "-"}
                     </td>
                     <td className="p-2">
@@ -287,12 +384,12 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
         {/* 회원 / 크레딧 관리 테이블 */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <section className="bg-white rounded-xl shadow p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">회원 / 크레딧 관리</h2>
+            <h2 className="font-semibold text-gray-800">회원 / 크레딧 관리</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -301,12 +398,22 @@ export default function AdminPage() {
                   <th className="p-2">ID</th>
                   <th className="p-2">이메일</th>
                   <th className="p-2">미용실명</th>
-                  <th className="p-2">등급</th>
+                  <th className="p-2">플랜</th>
                   <th className="p-2">크레딧</th>
                   <th className="p-2">관리</th>
                 </tr>
               </thead>
               <tbody>
+                {users.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-4 text-center text-gray-400 text-xs"
+                    >
+                      등록된 회원이 없습니다.
+                    </td>
+                  </tr>
+                )}
                 {users.map((u) => (
                   <tr key={u.id} className="border-b hover:bg-gray-50">
                     <td className="p-2">{u.id}</td>
@@ -315,7 +422,7 @@ export default function AdminPage() {
                     <td className="p-2">
                       <select
                         id={`plan-${u.id}`}
-                        defaultValue={u.plan_type}
+                        defaultValue={u.plan_type || "free"}
                         className="border p-1 rounded text-xs"
                       >
                         <option value="free">Free</option>
@@ -329,52 +436,31 @@ export default function AdminPage() {
                         id={`credit-${u.id}`}
                         type="number"
                         defaultValue={u.credits}
-                        className="border p-1 rounded w-20 text-xs"
+                        className="border p-1 rounded w-24 text-xs"
                       />
                     </td>
                     <td className="p-2 space-x-2">
                       <button
-                        onClick={() => {
-                          const plan = (
-                            document.getElementById(
-                              `plan-${u.id}`
-                            ) as HTMLSelectElement
-                          ).value;
-                          const creditStr = (
-                            document.getElementById(
-                              `credit-${u.id}`
-                            ) as HTMLInputElement
-                          ).value;
-                          const creditNum = parseInt(creditStr || "0", 10);
-                          handleUpdateUser(u.id, plan, creditNum);
-                        }}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                        onClick={() => handleUpdateUser(u)}
+                        disabled={savingUserId === u.id}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                       >
-                        저장
+                        {savingUserId === u.id ? "저장 중..." : "저장"}
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(u.id)}
-                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
+                        onClick={() => handleDeleteUser(u)}
+                        disabled={savingUserId === u.id}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 disabled:opacity-50"
                       >
                         삭제
                       </button>
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="p-4 text-center text-gray-400 text-xs"
-                    >
-                      등록된 회원이 없습니다.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
