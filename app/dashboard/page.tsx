@@ -20,6 +20,7 @@ export default function Dashboard() {
 
   const [credits, setCredits] = useState(0);
   const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");  // ✅ 추가
 
   const canvasRef = useRef<any>(null);
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function Dashboard() {
       });
       setCredits(res.data.credits);
       setUserName(res.data.email.split("@")[0]);
+      setUserEmail(res.data.email);          // ✅ 그대로 저장
     } catch (err) {
       console.error("정보 불러오기 실패", err);
     }
@@ -170,7 +172,10 @@ export default function Dashboard() {
             <div className="text-gray-600">
               안녕하세요, <b>{userName}</b> 원장님
             </div>
-
+            {userEmail && (
+              <div className="text-xs text-gray-400">{userEmail}</div>
+            )}
+          </div> // 추가한 내용
             <button
               onClick={handleLogout}
               className="text-gray-400 hover:text-red-500 flex items-center gap-2"
