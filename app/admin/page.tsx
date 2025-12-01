@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://hairfit-backend-production.up.railway.app";
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://127.0.0.1:8000";
+
+const getToken = () =>
+  typeof window === "undefined"
+    ? null
+    : localStorage.getItem("hairfit_token") || localStorage.getItem("token");
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);

@@ -3,11 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
-import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react"; // Coins 아이콘 추가
+import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// ✅ 백엔드 URL 한 번만 정의
 const API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://127.0.0.1:8000";
 
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
@@ -17,55 +20,58 @@ export default function Dashboard() {
   const [age, setAge] = useState("30대");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  
-  // [NEW] 크레딧 상태 추가
+
   const [credits, setCredits] = useState(0);
   const [userName, setUserName] = useState("");
-  
+
   const canvasRef = useRef<any>(null);
   const router = useRouter();
 
-  // 👇 여기 추가
+  // ✅ 공통 토큰 가져오기
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+    return (
+      localStorage.getItem("hairfit_token") ||
+      localStorage.getItem("token")
+    );
+  };
+
+  // 로그아웃
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("hairfit_token");
       localStorage.removeItem("token");
+      localStorage.removeItem("hairfit_email");
     }
     router.push("/");
   };
 
-  // [NEW] 내 정보(크레딧) 불러오기 함수
+  // 내 정보(크레딧) 불러오기
   const fetchMyInfo = async () => {
-  try {
-    const token =
-      localStorage.getItem("hairfit_token") ||
-      localStorage.getItem("token"); // 둘 중 하나라도 있으면 사용
-    if (!token) return;
+    try {
+      const token = getToken();
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return handleLogout();
+      }
 
-    const res = await axios.get(`${API_URL}/users/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setCredits(res.data.credits);
-    setUserName(res.data.email.split("@")[0]);
-  } catch (err) {
-    console.error("정보 불러오기 실패", err);
-  }
-};
+      const res = await axios.get(`${API_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setCredits(res.data.credits);
+      setUserName(res.data.email.split("@")[0]);
+    } catch (err) {
+      console.error("정보 불러오기 실패", err);
+      alert("세션이 만료되었습니다. 다시 로그인해 주세요.");
+      handleLogout();
+    }
+  };
 
   // 페이지 로드 시 실행
   useEffect(() => {
-  const token =
-    localStorage.getItem("hairfit_token") ||
-    localStorage.getItem("token");
-
-  if (!token) {
-    alert("로그인이 필요합니다.");
-    router.push("/");
-  } else {
     fetchMyInfo();
-  }
-}, [router]);
-
+  }, [router]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,7 +95,7 @@ export default function Dashboard() {
     }
   };
 
-  // ⬇⬇⬇ **여기가 핵심**: handleGenerate 함수 전체를 Dashboard 컴포넌트 안, return 위에 넣어줘야 해
+  // AI 변환
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
     if (credits <= 0) return alert("크레딧이 부족합니다!");
@@ -97,24 +103,30 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      const maskData = canvasRef.current.getDataURL("image/png", false, "#000000");
-      const token =
-  localStorage.getItem("hairfit_token") ||
-  localStorage.getItem("token");
+      const token = getToken();
+      if (!token) {
+        alert("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+        return handleLogout();
+      }
 
+      const maskData = canvasRef.current.getDataURL(
+        "image/png",
+        false,
+        "#000000"
+      );
 
       const response = await axios.post(
-  `${API_URL}/generate/`,
-  {
-    image_url: image,
-    mask_url: maskData,
-    gender,
-    age,
-  },
-  {
-    headers: { Authorization: `Bearer ${token}` },
-  }
-);
+        `${API_URL}/generate/`,
+        {
+          image_url: image,
+          mask_url: maskData,
+          gender,
+          age,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setResult(response.data.result_url);
       setCredits(response.data.remaining_credits);
@@ -126,17 +138,15 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-  // ⬆⬆⬆ 여기까지가 handleGenerate
-
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       {/* 상단 네비게이션 */}
       <nav className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800">HairFit Studio</h1>
-        
+
         <div className="flex items-center gap-6">
-          {/* [NEW] 크레딧 표시기 */}
+          {/* 크레딧 표시기 */}
           <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200">
             <Coins className="text-yellow-500" size={20} />
             <span className="font-bold text-yellow-700">{credits} 크레딧</span>
@@ -147,11 +157,11 @@ export default function Dashboard() {
           </div>
 
           <button
-  onClick={handleLogout}
-  className="text-gray-400 hover:text-red-500 flex items-center gap-2 text-sm"
->
-  <LogOut size={18} /> 로그아웃
-</button>
+            onClick={handleLogout}
+            className="text-gray-400 hover:text-red-500 flex items-center gap-2 text-sm"
+          >
+            <LogOut size={18} /> 로그아웃
+          </button>
         </div>
       </nav>
 
@@ -161,26 +171,32 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             1. 사진 업로드 & 얼굴 색칠하기
           </h2>
-          
+
           <div className="mb-4">
             <label className="flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg transition">
               <Upload size={18} />
               <span>고객 사진 선택하기</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
             </label>
           </div>
 
-          <div className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
-               style={{ width: 500, height: height > 0 ? height : 300 }}>
-            
+          <div
+            className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+            style={{ width: 500, height: height > 0 ? height : 300 }}
+          >
             {!image ? (
               <p className="text-gray-400">사진을 올려주세요</p>
             ) : (
               <>
-                <img 
-                  src={image} 
-                  alt="Original" 
-                  className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" 
+                <img
+                  src={image}
+                  alt="Original"
+                  className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
                   style={{ width: width, height: height }}
                 />
                 <CanvasDraw
@@ -199,13 +215,13 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-4 flex gap-2">
-            <button 
+            <button
               onClick={() => canvasRef.current?.undo()}
               className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
             >
               되돌리기
             </button>
-            <button 
+            <button
               onClick={() => canvasRef.current?.clear()}
               className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
             >
@@ -218,26 +234,40 @@ export default function Dashboard() {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-lg">
             <h2 className="text-lg font-semibold mb-4">2. 옵션 선택</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">성별</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="male" checked={gender === "male"} onChange={(e) => setGender(e.target.value)} />
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="male"
+                      checked={gender === "male"}
+                      onChange={(e) => setGender(e.target.value)}
+                    />
                     남성 (무쌍/훈남)
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="female" checked={gender === "female"} onChange={(e) => setGender(e.target.value)} />
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="female"
+                      checked={gender === "female"}
+                      onChange={(e) => setGender(e.target.value)}
+                    />
                     여성 (K-Beauty)
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-600 mb-1">연령대</label>
-                <select 
-                  value={age} 
+                <label className="block text-sm text-gray-600 mb-1">
+                  연령대
+                </label>
+                <select
+                  value={age}
                   onChange={(e) => setAge(e.target.value)}
                   className="w-full p-2 border rounded-lg"
                 >
@@ -265,11 +295,13 @@ export default function Dashboard() {
 
           {result && (
             <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-blue-100">
-              <h2 className="text-lg font-semibold mb-4 text-blue-800">✨ 변환 결과</h2>
+              <h2 className="text-lg font-semibold mb-4 text-blue-800">
+                ✨ 변환 결과
+              </h2>
               <img src={result} alt="Result" className="w-full rounded-lg mb-4" />
-              <a 
-                href={result} 
-                target="_blank" 
+              <a
+                href={result}
+                target="_blank"
                 rel="noreferrer"
                 className="block w-full text-center bg-gray-800 text-white py-2 rounded-lg hover:bg-black transition flex items-center justify-center gap-2"
               >
