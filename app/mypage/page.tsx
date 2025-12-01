@@ -160,13 +160,15 @@ export default function MyPage() {
               있어요.
             </p>
           </div>
-
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-sm text-blue-600 underline"
-          >
-            ← 대시보드로 돌아가기
-          </button>
+            <button
+    onClick={() => router.push("/dashboard")}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-xs md:text-sm text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition"
+  >
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-white text-[10px]">
+      ←
+    </span>
+    <span className="font-medium">대시보드로 돌아가기</span>
+  </button>
         </header>
 
         {/* 에러 메시지 */}
