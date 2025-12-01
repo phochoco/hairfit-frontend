@@ -188,21 +188,20 @@ export default function Dashboard() {
   <span className="h-2 w-2 rounded-full bg-purple-500"></span>
   <span>현재 플랜</span>
 </button>
-
-  {/* 작은 배지 문구 */}
-  <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-[11px] font-medium">
-    오늘도 멋진 스타일링을 만들어봐요
-  </span>
-
   {/* 로그아웃 pill */}
-  <button
-    onClick={logout}
-    className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition"
-  >
-    <span className="text-sm">↪</span>
-    <span>로그아웃</span>
-  </button>
-
+<button
+  onClick={() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("hairfit_token");
+      localStorage.removeItem("token");
+    }
+    router.push("/");
+  }}
+  className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition"
+>
+  <span className="text-sm">↪</span>
+  <span>로그아웃</span>
+</button>
 </div>
 
         </div>
