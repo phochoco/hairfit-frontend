@@ -42,6 +42,8 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   const getToken = () =>
     (typeof window !== "undefined" &&
@@ -80,40 +82,45 @@ export default function AdminPage() {
   };
 
   // ---------- API: 통계 + 생성 로그 ----------
-  const fetchStatsAndLogs = async (emailFilter?: string) => {
-    try {
-      const token = getToken();
-      if (!token) throw new Error("no token");
+  const fetchStatsAndLogs = async (emailFilter?: string, page: number = 1) => {
+  try {
+    const token = getToken();
+    if (!token) throw new Error("no token");
 
-      const headers = { Authorization: `Bearer ${token}` };
+    const headers = { Authorization: `Bearer ${token}` };
 
-      // 오늘/이번주 통계
-      const statsRes = await axios.get<StatSummary>(
-        `${API_URL}/admin/generation-stats`,
-        { headers }
-      );
-      setStats(statsRes.data);
+    // 오늘/이번주 통계
+    const statsRes = await axios.get<StatSummary>(
+      `${API_URL}/admin/generation-stats`,
+      { headers }
+    );
+    setStats(statsRes.data);
 
-      // 생성 로그 (v2: /admin/generation-logs, { items: [...] } 반환)
-      const logsRes = await axios.get(`${API_URL}/admin/generation-logs`, {
-        headers,
-        params: {
-          user_email: emailFilter || undefined,
-          limit: 100,
-          offset: 0,
-        },
-      });
+    // 🔹 페이지네이션: 1페이지당 10개
+    const limit = 10;
+    const offset = (page - 1) * limit;
 
-      const raw = logsRes.data as any;
-      const items: GenerationLog[] = Array.isArray(raw?.items)
-        ? raw.items
-        : [];
-      setLogs(items);
-    } catch (err) {
-      console.error("생성 로그/통계 불러오기 실패", err);
-      // 여기서는 에러만 콘솔에, 상단 error는 유저 목록에서 처리
-    }
-  };
+    const logsRes = await axios.get(`${API_URL}/admin/generation-logs`, {
+      headers,
+      params: {
+        user_email: emailFilter || undefined,
+        limit,
+        offset,
+      },
+    });
+
+    const raw = logsRes.data as any;
+    const items: GenerationLog[] = Array.isArray(raw?.items)
+      ? raw.items
+      : [];
+
+    setLogs(items);
+    setCurrentPage(page);
+    setHasNextPage(items.length === limit); // 10개 꽉 차면 다음 페이지가 있다고 가정
+  } catch (err) {
+    console.error("생성 로그/통계 불러오기 실패", err);
+  }
+};
 
   // ---------- 회원 정보(플랜/크레딧) 수정 ----------
   const handleUpdateUser = async (user: User) => {
@@ -213,8 +220,8 @@ export default function AdminPage() {
   };
 
   const handleSearchLogs = async () => {
-    await fetchStatsAndLogs(searchEmail.trim() || undefined);
-  };
+  await fetchStatsAndLogs(searchEmail.trim() || undefined, 1);
+};
 
   // ---------- 초기 로딩 ----------
   useEffect(() => {
@@ -382,9 +389,44 @@ export default function AdminPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        </section>
+                  </table>
+    </div>
+
+    {/* 페이지네이션 */}
+    <div className="flex items-center justify-between mt-4 text-xs text-gray-600">
+      <button
+        onClick={() =>
+          currentPage > 1 &&
+          fetchStatsAndLogs(searchEmail.trim() || undefined, currentPage - 1)
+        }
+        disabled={currentPage === 1}
+        className={`px-3 py-1 rounded-lg border ${
+          currentPage === 1
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-white hover:bg-gray-50"
+        }`}
+      >
+        ← 이전
+      </button>
+
+      <span>페이지 {currentPage}</span>
+
+      <button
+        onClick={() =>
+          hasNextPage &&
+          fetchStatsAndLogs(searchEmail.trim() || undefined, currentPage + 1)
+        }
+        disabled={!hasNextPage}
+        className={`px-3 py-1 rounded-lg border ${
+          !hasNextPage
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-white hover:bg-gray-50"
+        }`}
+      >
+        다음 →
+      </button>
+    </div>
+  </section>
 
         {/* 회원 / 크레딧 관리 테이블 */}
         <section className="bg-white rounded-xl shadow p-6">
