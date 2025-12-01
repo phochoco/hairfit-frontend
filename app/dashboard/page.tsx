@@ -179,20 +179,18 @@ export default function Dashboard() {
     </span>
     <span className="font-medium">나의 이용 내역</span>
   </button>
-            <div className="flex items-center gap-2">
-  <span className="font-semibold text-gray-900">
-    원장님 대시보드
-  </span>
-  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-[11px] font-medium text-purple-600 border border-purple-100">
-    오늘도 멋진 스타일링을 만들어봐요
-  </span>
+            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm hover:bg-purple-100 transition">
+  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+  <span>{user?.plan_type.toUpperCase()} 플랜</span>
+</button>
 </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-red-500 flex items-center gap-2"
-            >
-              <LogOut size={18} /> 로그아웃
-            </button>
+           <button
+  onClick={logout}
+  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition"
+>
+  <span className="text-sm">↪</span>
+  <span>로그아웃</span>
+</button>
           </div>
         </div>
       </nav>
