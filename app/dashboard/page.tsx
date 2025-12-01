@@ -66,35 +66,38 @@ export default function Dashboard() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const img = new Image();
-          img.src = event.target.result as string;
-          img.onload = () => {
-            const ratio = img.height / img.width;
+    if (!file) return;
 
-            // ✅ 화면 크기에 따라 캔버스 폭 조절 (모바일에서는 더 작게)
-            let baseWidth = 500;
-            if (typeof window !== "undefined") {
-              const vw = window.innerWidth;
-              if (vw < 768) {
-                // 모바일: 좌우 여백 조금 빼고 계산
-                baseWidth = vw - 48; // padding 고려
-              }
-            }
-            const newWidth = Math.min(500, baseWidth);
-            const newHeight = newWidth * ratio;
+    const reader = new FileReader();
 
-            setWidth(newWidth);
-            setHeight(newHeight);
-            setImage(event.target.result as string);
-          };
+    reader.onload = (ev: ProgressEvent<FileReader>) => {
+      const result = ev.target?.result;
+      if (!result) return;
+
+      const img = new Image();
+      img.src = result as string;
+
+      img.onload = () => {
+        const ratio = img.height / img.width;
+
+        // ✅ 화면 크기에 따라 캔버스 폭 조절 (모바일에서는 더 작게)
+        let baseWidth = 500;
+        if (typeof window !== "undefined") {
+          const vw = window.innerWidth;
+          if (vw < 768) {
+            baseWidth = vw - 48; // 좌우 padding 고려
+          }
         }
+        const newWidth = Math.min(500, baseWidth);
+        const newHeight = newWidth * ratio;
+
+        setWidth(newWidth);
+        setHeight(newHeight);
+        setImage(result as string); // 이미 null 체크한 값 사용
       };
-      reader.readAsDataURL(file);
-    }
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleGenerate = async () => {
@@ -183,7 +186,7 @@ export default function Dashboard() {
         {/* 왼쪽: 작업 공간 */}
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            1. 사진 업로드 & 변경할 부분 색칠
+            1. 사진 업로드 -> 변경할 부분 색칠
           </h2>
 
           <div className="mb-4">
@@ -204,7 +207,7 @@ export default function Dashboard() {
             <div
               className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center w-full"
               style={{
-                maxWidth: width, // 최대 폭은 state 기준
+                maxWidth: width,
                 height: height > 0 ? height : 300,
               }}
             >
@@ -258,7 +261,9 @@ export default function Dashboard() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">성별</label>
+                <label className="block text-sm text-gray-600 mb-1">
+                  성별
+                </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
