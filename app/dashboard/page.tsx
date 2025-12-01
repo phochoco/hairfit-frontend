@@ -6,18 +6,8 @@ import axios from "axios";
 import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-<button
-  onClick={() => router.push("/mypage")}
-  className="text-sm text-blue-600 hover:text-blue-800 underline"
->
-  내 생성내역
-</button>
-
-// ✅ 백엔드 URL 한 번만 정의
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
@@ -34,50 +24,42 @@ export default function Dashboard() {
   const canvasRef = useRef<any>(null);
   const router = useRouter();
 
-  // ✅ 공통 토큰 가져오기
-  const getToken = () => {
-    if (typeof window === "undefined") return null;
-    return (
-      localStorage.getItem("hairfit_token") ||
-      localStorage.getItem("token")
-    );
-  };
-
-  // 로그아웃
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("hairfit_token");
       localStorage.removeItem("token");
-      localStorage.removeItem("hairfit_email");
     }
     router.push("/");
   };
 
-  // 내 정보(크레딧) 불러오기
   const fetchMyInfo = async () => {
     try {
-      const token = getToken();
-      if (!token) {
-        alert("로그인이 필요합니다.");
-        return handleLogout();
-      }
+      const token =
+        localStorage.getItem("hairfit_token") ||
+        localStorage.getItem("token");
+      if (!token) return;
 
       const res = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setCredits(res.data.credits);
       setUserName(res.data.email.split("@")[0]);
     } catch (err) {
       console.error("정보 불러오기 실패", err);
-      alert("세션이 만료되었습니다. 다시 로그인해 주세요.");
-      handleLogout();
     }
   };
 
-  // 페이지 로드 시 실행
   useEffect(() => {
-    fetchMyInfo();
+    const token =
+      localStorage.getItem("hairfit_token") ||
+      localStorage.getItem("token");
+
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      router.push("/");
+    } else {
+      fetchMyInfo();
+    }
   }, [router]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +84,6 @@ export default function Dashboard() {
     }
   };
 
-  // AI 변환
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
     if (credits <= 0) return alert("크레딧이 부족합니다!");
@@ -110,17 +91,14 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      const token = getToken();
-      if (!token) {
-        alert("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-        return handleLogout();
-      }
-
       const maskData = canvasRef.current.getDataURL(
         "image/png",
         false,
         "#000000"
       );
+      const token =
+        localStorage.getItem("hairfit_token") ||
+        localStorage.getItem("token");
 
       const response = await axios.post(
         `${API_URL}/generate/`,
@@ -158,6 +136,14 @@ export default function Dashboard() {
             <Coins className="text-yellow-500" size={20} />
             <span className="font-bold text-yellow-700">{credits} 크레딧</span>
           </div>
+
+          {/* 내 생성내역 버튼 */}
+          <button
+            onClick={() => router.push("/mypage")}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            내 생성내역
+          </button>
 
           <div className="text-gray-600">
             안녕하세요, <b>{userName}</b> 원장님
@@ -254,7 +240,7 @@ export default function Dashboard() {
                       checked={gender === "male"}
                       onChange={(e) => setGender(e.target.value)}
                     />
-                    남성 (무쌍/훈남)
+                    남성
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -264,7 +250,7 @@ export default function Dashboard() {
                       checked={gender === "female"}
                       onChange={(e) => setGender(e.target.value)}
                     />
-                    여성 (K-Beauty)
+                    여성
                   </label>
                 </div>
               </div>
@@ -305,7 +291,11 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold mb-4 text-blue-800">
                 ✨ 변환 결과
               </h2>
-              <img src={result} alt="Result" className="w-full rounded-lg mb-4" />
+              <img
+                src={result}
+                alt="Result"
+                className="w-full rounded-lg mb-4"
+              />
               <a
                 href={result}
                 target="_blank"
