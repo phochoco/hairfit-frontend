@@ -373,21 +373,41 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              onClick={() => canvasRef.current?.undo()}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-            >
-              되돌리기
-            </button>
-            <button
-              onClick={() => canvasRef.current?.clear()}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
-            >
-              <Eraser size={14} /> 지우기
-            </button>
-          </div>
-        </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+  <button
+    onClick={() => canvasRef.current?.undo()}
+    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+  >
+    되돌리기
+  </button>
+
+  <button
+    onClick={() => canvasRef.current?.clear()}
+    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
+  >
+    <Eraser size={14} /> 지우기
+  </button>
+
+  {/* 브러시 두께 슬라이더 */}
+  <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+    <span className="text-xs text-gray-500 whitespace-nowrap">
+      브러시 두께
+    </span>
+    <input
+      type="range"
+      min={isMobile ? 1 : 2}
+      max={isMobile ? 16 : 24}
+      step={1}
+      value={brushRadius}
+      onChange={(e) => setBrushRadius(Number(e.target.value))}
+      className="flex-1"
+    />
+    <span className="text-xs text-gray-500 w-8 text-right">
+      {brushRadius}
+    </span>
+  </div>
+</div>
+
 
         {/* 오른쪽: 옵션 및 결과 */}
         <div className="space-y-6">
