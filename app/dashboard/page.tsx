@@ -113,86 +113,113 @@ export default function Dashboard() {
   }, [router]);
 
   // 📷 이미지 업로드 + EXIF + 자동 회전 보정
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // 📷 이미지 업로드 (모바일은 EXIF 회전, PC는 원래 방식)
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (ev: ProgressEvent<FileReader>) => {
-      const result = ev.target?.result;
-      if (!result) return;
+  const reader = new FileReader();
 
+  reader.onload = (ev: ProgressEvent<FileReader>) => {
+    const result = ev.target?.result;
+    if (!result) return;
+
+    // ✅ 1) PC / 태블릿 넓은 화면: 예전처럼 그대로 사용 (회전 보정 X)
+    if (!isMobile) {
       const img = new Image();
       img.onload = () => {
-        let w = img.width;
-        let h = img.height;
+        const ratio = img.height / img.width;
 
-        // 1) EXIF Orientation 읽기 시도
-        let orientation = 1;
-        try {
-          (EXIF as any).getData(file, function (this: any) {
-            orientation = (EXIF as any).getTag(this, "Orientation") || 1;
-          });
-        } catch (err) {
-          console.warn("EXIF read failed, fallback to auto-rotate");
-        }
-
-        // 2) EXIF가 없거나 이상하면 화면 비율 기반 자동 감지
-        const autoRotateNeeded = (() => {
-          const isPortraitDisplay = window.innerWidth < window.innerHeight;
-          const orientationMismatch =
-            (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
-          return orientationMismatch;
-        })();
-
-        const needRotate =
-          orientation !== 1 || autoRotateNeeded ? true : false;
-
-        let rotateDeg = 0;
-
-        if (orientation === 6) rotateDeg = 90;
-        else if (orientation === 8) rotateDeg = -90;
-        else if (orientation === 3) rotateDeg = 180;
-        else if (autoRotateNeeded) rotateDeg = 90;
-
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
-          canvas.width = h;
-          canvas.height = w;
-        } else {
-          canvas.width = w;
-          canvas.height = h;
-        }
-
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((rotateDeg * Math.PI) / 180);
-        ctx.drawImage(img, -w / 2, -h / 2);
-
-        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-
-        // 화면 표시 크기
         let baseWidth = 500;
         if (typeof window !== "undefined") {
           const vw = window.innerWidth;
-          if (vw < 768) baseWidth = vw - 48;
+          if (vw < 768) {
+            baseWidth = vw - 48;
+          }
         }
-        const displayWidth = Math.min(500, baseWidth);
-        const displayHeight =
-          (canvas.height / canvas.width) * displayWidth;
+        const newWidth = Math.min(500, baseWidth);
+        const newHeight = newWidth * ratio;
 
-        setWidth(displayWidth);
-        setHeight(displayHeight);
-        setImage(fixedDataUrl);
+        setWidth(newWidth);
+        setHeight(newHeight);
+        setImage(result as string);
       };
-
       img.src = result as string;
+      return;
+    }
+
+    // ✅ 2) 모바일: EXIF + 자동 회전 로직 유지
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width;
+      let h = img.height;
+
+      // 1) EXIF Orientation 읽기 시도
+      let orientation = 1;
+      try {
+        (EXIF as any).getData(file, function (this: any) {
+          orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+        });
+      } catch (err) {
+        console.warn("EXIF read failed, fallback to auto-rotate");
+      }
+
+      // 2) EXIF 없거나 이상할 때, 화면 비율 기반 자동 감지
+      const autoRotateNeeded = (() => {
+        const isPortraitDisplay = window.innerWidth < window.innerHeight;
+        const orientationMismatch =
+          (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
+        return orientationMismatch;
+      })();
+
+      const needRotate =
+        orientation !== 1 || autoRotateNeeded ? true : false;
+
+      let rotateDeg = 0;
+
+      if (orientation === 6) rotateDeg = 90;
+      else if (orientation === 8) rotateDeg = -90;
+      else if (orientation === 3) rotateDeg = 180;
+      else if (autoRotateNeeded) rotateDeg = 90;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
+        canvas.width = h;
+        canvas.height = w;
+      } else {
+        canvas.width = w;
+        canvas.height = h;
+      }
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((rotateDeg * Math.PI) / 180);
+      ctx.drawImage(img, -w / 2, -h / 2);
+
+      const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+      let baseWidth = 500;
+      if (typeof window !== "undefined") {
+        const vw = window.innerWidth;
+        if (vw < 768) baseWidth = vw - 48;
+      }
+      const displayWidth = Math.min(500, baseWidth);
+      const displayHeight =
+        (canvas.height / canvas.width) * displayWidth;
+
+      setWidth(displayWidth);
+      setHeight(displayHeight);
+      setImage(fixedDataUrl);
     };
 
-    reader.readAsDataURL(file);
+    img.src = result as string;
   };
+
+  reader.readAsDataURL(file);
+};
+
 
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
@@ -357,11 +384,6 @@ export default function Dashboard() {
                     hideGrid={true}
                     backgroundColor="transparent"
                     className="absolute inset-0"
-                    style={{
-                      cursor: image
-                        ? "url('/pen-cursor.png') 16 56, crosshair"
-                        : "default",
-                    }}
                   />
                 </>
               )}
