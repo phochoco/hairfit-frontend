@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [zoom, setZoom] = useState(1);
 
   const MIN_ZOOM = 1;
-  const MAX_ZOOM = 2.5;
+  const MAX_ZOOM = 3.0;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -284,43 +284,40 @@ export default function Dashboard() {
 
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
-            <div
-              className="
-                relative border-2 border-dashed border-gray-300 rounded-xl 
-                bg-gray-50 flex items-center justify-center w-full 
-                overflow-hidden
-              "
-              style={{
-                maxWidth: displayWidth,
-                height: displayHeight > 0 ? displayHeight : 300,
-              }}
-            >
-              {!image ? (
-                <p className="text-gray-400 text-sm md:text-base">
-                  사진을 올려주세요
-                </p>
-              ) : (
-                <>
-                  <img
-                    src={image}
-                    alt="Original"
-                    className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
-                  />
-                  <CanvasDraw
-                    ref={canvasRef}
-                    brushColor="rgba(255, 255, 255, 0.8)"
-                    brushRadius={effectiveBrushRadius}
-                    lazyRadius={0}
-                    canvasWidth={displayWidth}
-                    canvasHeight={displayHeight}
-                    hideGrid={true}
-                    backgroundColor="transparent"
-                    className="absolute top-0 left-0"
-                  />
-                </>
-              )}
-            </div>
-          </div>
+  <div
+    className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+    style={{
+      // ✅ 컨테이너 실제 가로·세로를 확대된 값으로 직접 지정
+      width: displayWidth,
+      height: displayHeight > 0 ? displayHeight : 300,
+    }}
+  >
+    {!image ? (
+      <p className="text-gray-400 text-sm md:text-base">
+        사진을 올려주세요
+      </p>
+    ) : (
+      <>
+        <img
+          src={image}
+          alt="Original"
+          className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
+        />
+        <CanvasDraw
+          ref={canvasRef}
+          brushColor="rgba(255, 255, 255, 0.8)"
+          brushRadius={effectiveBrushRadius}   // ✅ 앞에서 만든 값
+          lazyRadius={0}
+          canvasWidth={displayWidth}          // ✅ 확대된 크기
+          canvasHeight={displayHeight}
+          hideGrid={true}
+          backgroundColor="transparent"
+          className="absolute top-0 left-0"
+        />
+      </>
+    )}
+  </div>
+</div>
 
           {/* 확대/축소 컨트롤 */}
           {image && (
