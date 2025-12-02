@@ -22,6 +22,32 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");  // ✅ 추가
 
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [fakeProgress, setFakeProgress] = useState(0);   // 0~100
+  const [statusMessage, setStatusMessage] = useState("AI가 변환 중입니다...");
+
+    // ✅ AI 변환 대기 시간 동안 보여줄 가짜 프로그레스 타이머
+  useEffect(() => {
+    if (!isGenerating) return;
+
+    const start = Date.now();
+    const total = 15000; // 15초 동안 0 → 90% 까지 올라가도록
+
+    // 시작할 때 최소 5% 정도 보이게
+    setFakeProgress(5);
+    setStatusMessage("AI가 변환 중입니다...");
+
+    const id = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const target = Math.min(90, Math.round((elapsed / total) * 90));
+
+      setFakeProgress((prev) => (target > prev ? target : prev));
+    }, 300);
+
+    // isGenerating 이 false 로 바뀌면 타이머 정리
+    return () => clearInterval(id);
+  }, [isGenerating]);
+
   const canvasRef = useRef<any>(null);
   const router = useRouter();
 
@@ -102,11 +128,14 @@ export default function Dashboard() {
     reader.readAsDataURL(file);
   };
 
-  const handleGenerate = async () => {
+    const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
     if (credits <= 0) return alert("크레딧이 부족합니다!");
 
     setLoading(true);
+    setIsGenerating(true);        // ✅ 프로그레스 시작
+    setFakeProgress(5);
+    setStatusMessage("AI가 변환 중입니다...");
 
     try {
       const maskData = canvasRef.current.getDataURL(
@@ -133,12 +162,24 @@ export default function Dashboard() {
 
       setResult(response.data.result_url);
       setCredits(response.data.remaining_credits);
+
+      // ✅ 끝났으니 프로그레스 100%
+      setFakeProgress(100);
+      setStatusMessage("변환이 완료되었어요!");
+
+      // 1.5초 정도 보여주고 서서히 숨김
+      setTimeout(() => {
+        setFakeProgress(0);
+      }, 1500);
+
       alert("변환 성공!");
     } catch (error) {
       console.error(error);
+      setStatusMessage("오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
       alert("변환 실패. 잠시 후 다시 시도해주세요.");
     } finally {
       setLoading(false);
+      setIsGenerating(false);   // ✅ 타이머 useEffect 정지
     }
   };
 
@@ -190,7 +231,7 @@ export default function Dashboard() {
   {/* 나의 이용 내역 */}
   <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-blue-50 text-blue-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-blue-100 whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-red-100 whitespace-nowrap"
   >
     나의 이용 내역
   </button>
@@ -328,19 +369,33 @@ export default function Dashboard() {
                 </select>
               </div>
 
-              <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  "AI가 변신 중입니다..."
-                ) : (
-                  <>
-                    <Wand2 /> AI 변환 시작 (1 크레딧 차감)
-                  </>
-                )}
-              </button>
+              {/* AI 변환 버튼 + 진행 바 */}
+<div className="mt-4">
+  <button
+    onClick={handleGenerate}
+    disabled={isGenerating || !image}
+    className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-3 font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {isGenerating ? "AI가 변환 중입니다..." : "AI 변환 시작 (1 크레딧 차감)"}
+  </button>
+
+  {/* 진행 바 영역 */}
+  {(isGenerating || fakeProgress > 0) && (
+    <div className="mt-3">
+      <div className="mb-1 flex items-center justify-between text-[11px] text-gray-500">
+        <span>{statusMessage}</span>
+        {isGenerating && <span>{fakeProgress}%</span>}
+        {!isGenerating && fakeProgress === 100 && <span>완료!</span>}
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 transition-all duration-300"
+          style={{ width: `${Math.max(5, fakeProgress)}%` }} // 최소 5%는 보이게
+        />
+      </div>
+    </div>
+  )}
+</div>
             </div>
           </div>
 
