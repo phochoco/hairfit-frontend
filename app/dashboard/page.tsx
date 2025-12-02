@@ -166,18 +166,16 @@ export default function Dashboard() {
   {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
-    className="flex items-center gap-2 px-4 py-2 rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+    className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
   >
-    <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
     <span>크레딧 충전</span>
   </button>
 
   {/* 나의 이용 내역 */}
   <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+    className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
   >
-    <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
     <span>나의 이용 내역</span>
   </button>
   {/* 로그아웃 pill */}
@@ -189,9 +187,8 @@ export default function Dashboard() {
     }
     router.push("/");
   }}
-  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-purple-50 text-purple-700 shadow-sm px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+  className="inline-flex items-center rounded-full border border-gray-200 bg-purple-50 text-purple-700 shadow-sm px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
 >
-  <span className="h-2 w-2 rounded-full bg-purple-500">↪</span>
   <span>로그아웃</span>
 </button>
 </div>
