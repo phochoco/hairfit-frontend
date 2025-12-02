@@ -54,7 +54,7 @@ export default function Dashboard() {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 8000;
+    const total = 10000;
 
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");

@@ -73,7 +73,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-          HairFit AI
+          Re-Fac Art
         </h1>
         <p className="text-center text-gray-500 mb-8">
            안전한 AI 스타일링 — 헤어 그대로, 얼굴만 변경
