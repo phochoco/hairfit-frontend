@@ -18,15 +18,15 @@ const PLANS = [
   {
     id: "free",
     name: "Free",
-    description: "회원가입 시 기본 제공",
-    credits: 0,
+    description: "회원가입 시 기본 5개 제공",
+    credits: 5,
     badge: "기본",
     highlight: false,
   },
   {
     id: "starter",
     name: "Starter",
-    description: "체험용, 소규모 샵 추천",
+    description: "3,000원",
     credits: 30,
     badge: "인기",
     highlight: true,
@@ -34,7 +34,7 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    description: "단골 많은 매장용",
+    description: "9,000원",
     credits: 100,
     badge: "프로",
     highlight: false,
@@ -42,9 +42,9 @@ const PLANS = [
   {
     id: "vip",
     name: "VIP",
-    description: "여러 지점을 운영하는 원장님용",
+    description: "25,000원",
     credits: 300,
-    badge: "스튜디오용",
+    badge: "VIP",
     highlight: false,
   },
 ];
