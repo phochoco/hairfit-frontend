@@ -42,11 +42,11 @@ export default function Dashboard() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ✏️ 브러시 두께 (모바일에서는 자동으로 더 얇게)
+  // ✏️ 브러시 두께 (슬라이더용)
   const [brushRadius, setBrushRadius] = useState(8);
 
   useEffect(() => {
-    setBrushRadius(isMobile ? 2 : 8); // 모바일 2px, PC 8px
+    setBrushRadius(isMobile ? 2 : 8); // 모바일 기본 2px, PC 기본 8px
   }, [isMobile]);
 
   // ⏳ AI 변환 가짜 프로그레스
@@ -112,97 +112,88 @@ export default function Dashboard() {
     }
   }, [router]);
 
-  // 📷 이미지 업로드 + EXIF Orientation 보정
-const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  // 📷 이미지 업로드 + EXIF + 자동 회전 보정
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (ev: ProgressEvent<FileReader>) => {
-    const result = ev.target?.result;
-    if (!result) return;
+    const reader = new FileReader();
+    reader.onload = (ev: ProgressEvent<FileReader>) => {
+      const result = ev.target?.result;
+      if (!result) return;
 
-    const img = new Image();
-    img.onload = () => {
-      let w = img.width;
-      let h = img.height;
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
 
-      // ✨ 1) 먼저 EXIF Orientation 읽기 시도
-      let orientation = 1;
-      try {
-        (EXIF as any).getData(file, function (this: any) {
-          orientation = (EXIF as any).getTag(this, "Orientation") || 1;
-        });
-      } catch (err) {
-        console.warn("EXIF read failed, fallback to auto-rotate");
-      }
+        // 1) EXIF Orientation 읽기 시도
+        let orientation = 1;
+        try {
+          (EXIF as any).getData(file, function (this: any) {
+            orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+          });
+        } catch (err) {
+          console.warn("EXIF read failed, fallback to auto-rotate");
+        }
 
-      // ✨ 2) EXIF가 제대로 안 나왔으면 자동 감지 로직 실행
-      const autoRotateNeeded = (() => {
-        const isPortraitDisplay = window.innerWidth < window.innerHeight;
-        const orientationMismatch =
-          (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
-        return orientationMismatch;
-      })();
+        // 2) EXIF가 없거나 이상하면 화면 비율 기반 자동 감지
+        const autoRotateNeeded = (() => {
+          const isPortraitDisplay = window.innerWidth < window.innerHeight;
+          const orientationMismatch =
+            (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
+          return orientationMismatch;
+        })();
 
-      // 회전이 필요한지 최종 판단
-      const needRotate =
-        orientation !== 1 || autoRotateNeeded ? true : false;
+        // 회전 필요 여부
+        const needRotate =
+          orientation !== 1 || autoRotateNeeded ? true : false;
 
-      // 회전 종류 계산
-      let rotateDeg = 0;
+        let rotateDeg = 0;
 
-      if (orientation === 6) rotateDeg = 90;
-      else if (orientation === 8) rotateDeg = -90;
-      else if (orientation === 3) rotateDeg = 180;
-      else if (autoRotateNeeded) {
-        // EXIF 못 읽었지만 모바일에서 누운 경우
-        rotateDeg = 90;
-      }
+        if (orientation === 6) rotateDeg = 90;
+        else if (orientation === 8) rotateDeg = -90;
+        else if (orientation === 3) rotateDeg = 180;
+        else if (autoRotateNeeded) rotateDeg = 90;
 
-      // ✨ 3) canvas 생성
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d")!;
-      if (!ctx) return;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-      // 회전 시 캔버스 크기 교환
-      if (rotateDeg === 90 || rotateDeg === -90) {
-        canvas.width = h;
-        canvas.height = w;
-      } else {
-        canvas.width = w;
-        canvas.height = h;
-      }
+        if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
 
-      // 회전 변환
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((rotateDeg * Math.PI) / 180);
-      ctx.drawImage(img, -w / 2, -h / 2);
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotateDeg * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2);
 
-      const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
-      // 화면 표시 크기 지정
-      let baseWidth = 500;
-      if (typeof window !== "undefined") {
-        const vw = window.innerWidth;
-        if (vw < 768) baseWidth = vw - 48;
-      }
-      const displayWidth = Math.min(500, baseWidth);
-      const displayHeight =
-        (canvas.height / canvas.width) * displayWidth;
+        // 화면 표시 크기
+        let baseWidth = 500;
+        if (typeof window !== "undefined") {
+          const vw = window.innerWidth;
+          if (vw < 768) baseWidth = vw - 48;
+        }
+        const displayWidth = Math.min(500, baseWidth);
+        const displayHeight =
+          (canvas.height / canvas.width) * displayWidth;
 
-      setWidth(displayWidth);
-      setHeight(displayHeight);
-      setImage(fixedDataUrl);
+        setWidth(displayWidth);
+        setHeight(displayHeight);
+        setImage(fixedDataUrl);
+      };
+
+      img.src = result as string;
     };
 
-    img.src = result as string;
+    reader.readAsDataURL(file);
   };
-
-  reader.readAsDataURL(file);
-};
-
-
 
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
@@ -226,7 +217,7 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const response = await axios.post(
         `${API_URL}/generate/`,
         {
-          image_url: image, // ✅ 방향 보정된 이미지
+          image_url: image,
           mask_url: maskData,
           gender,
           age,
@@ -373,41 +364,42 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </div>
 
+          {/* 브러시 컨트롤 */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
-  <button
-    onClick={() => canvasRef.current?.undo()}
-    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-  >
-    되돌리기
-  </button>
+            <button
+              onClick={() => canvasRef.current?.undo()}
+              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+            >
+              되돌리기
+            </button>
 
-  <button
-    onClick={() => canvasRef.current?.clear()}
-    className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
-  >
-    <Eraser size={14} /> 지우기
-  </button>
+            <button
+              onClick={() => canvasRef.current?.clear()}
+              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
+            >
+              <Eraser size={14} /> 지우기
+            </button>
 
-  {/* 브러시 두께 슬라이더 */}
-  <div className="flex items-center gap-2 flex-1 min-w-[140px]">
-    <span className="text-xs text-gray-500 whitespace-nowrap">
-      브러시 두께
-    </span>
-    <input
-      type="range"
-      min={isMobile ? 1 : 2}
-      max={isMobile ? 16 : 24}
-      step={1}
-      value={brushRadius}
-      onChange={(e) => setBrushRadius(Number(e.target.value))}
-      className="flex-1"
-    />
-    <span className="text-xs text-gray-500 w-8 text-right">
-      {brushRadius}
-    </span>
-  </div>
-</div>
-
+            {/* 브러시 두께 슬라이더 */}
+            <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+              <span className="text-xs text-gray-500 whitespace-nowrap">
+                브러시 두께
+              </span>
+              <input
+                type="range"
+                min={isMobile ? 1 : 2}
+                max={isMobile ? 16 : 24}
+                step={1}
+                value={brushRadius}
+                onChange={(e) => setBrushRadius(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="text-xs text-gray-500 w-8 text-right">
+                {brushRadius}
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* 오른쪽: 옵션 및 결과 */}
         <div className="space-y-6">
