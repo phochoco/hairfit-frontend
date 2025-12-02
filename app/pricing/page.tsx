@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, Sparkles, Crown, Star } from "lucide-react";
+import axios from "axios";
 
 type Plan = {
   id: string;
