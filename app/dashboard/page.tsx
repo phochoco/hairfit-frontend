@@ -190,7 +190,7 @@ export default function Dashboard() {
   {/* 나의 이용 내역 */}
   <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-indigo-100 whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-blue-50 text-blue-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-blue-100 whitespace-nowrap"
   >
     나의 이용 내역
   </button>
@@ -198,7 +198,7 @@ export default function Dashboard() {
   {/* 로그아웃 – 동일 디자인으로 통일 */}
   <button
     onClick={handleLogout}
-    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-slate-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-slate-100 whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-slate-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-slate-50 whitespace-nowrap"
   >
     로그아웃
   </button>
