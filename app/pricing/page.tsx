@@ -140,23 +140,31 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-5xl mx-auto">
         {/* 상단 헤더 */}
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              HairFit 요금제
-            </h1>
-            <p className="text-gray-500 mt-2">
-              “헤어는 그대로, 얼굴만 AI로 안전하게 생성합니다. 초상권 부담 없이 자유롭게 활용할 수 있는 스타일링 이미지 서비스입니다.”
-            </p>
-          </div>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-sm text-blue-600 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-50"
-          >
-            ← 대시보드로 돌아가기
-          </button>
-        </header>
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+  <div>
+    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+      HairFit 요금제
+    </h1>
+    <p className="mt-2 text-sm md:text-base text-gray-500 leading-relaxed">
+      “헤어는 그대로, 얼굴만 AI로 안전하게 생성합니다. 초상권 부담 없이 자유롭게 활용할 수 있는 스타일링 이미지 서비스입니다.”
+    </p>
+  </div>
 
+  <button
+    onClick={() => router.push("/dashboard")}
+    className="
+      inline-flex items-center gap-2 self-start
+      rounded-full border border-blue-100 bg-white text-blue-600
+      px-3 py-1.5 md:px-4 md:py-2
+      text-xs md:text-sm
+      whitespace-nowrap
+      shadow-sm hover:bg-blue-50 transition
+    "
+  >
+    <span className="text-sm">←</span>
+    <span>대시보드로 돌아가기</span>
+  </button>
+</header>
         {/* 내 현재 상태 */}
         {me && (
           <div className="mb-10 bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
