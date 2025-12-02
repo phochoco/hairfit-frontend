@@ -368,41 +368,44 @@ export default function Dashboard() {
           </div>
 
           {/* 브러시 컨트롤 */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => canvasRef.current?.undo()}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-            >
-              되돌리기
-            </button>
+<div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
+  {/* 버튼 영역 */}
+  <div className="flex flex-row gap-2">
+    <button
+      onClick={() => canvasRef.current?.undo()}
+      className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+    >
+      되돌리기
+    </button>
 
-            <button
-              onClick={() => canvasRef.current?.clear()}
-              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
-            >
-              <Eraser size={14} /> 지우기
-            </button>
+    <button
+      onClick={() => canvasRef.current?.clear()}
+      className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
+    >
+      <Eraser size={14} /> 지우기
+    </button>
+  </div>
 
-            {/* 브러시 두께 슬라이더 */}
-            <div className="flex items-center gap-2 flex-1 min-w-[140px]">
-              <span className="text-xs text-gray-500 whitespace-nowrap">
-                브러시 두께
-              </span>
-              <input
-                type="range"
-                min={isMobile ? 1 : 2}
-                max={isMobile ? 16 : 24}
-                step={1}
-                value={brushRadius}
-                onChange={(e) => setBrushRadius(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-xs text-gray-500 w-8 text-right">
-                {brushRadius}
-              </span>
-            </div>
-          </div>
-        </div>
+  {/* 슬라이더 영역 */}
+  <div className="flex items-center gap-2 w-full md:flex-1">
+    <span className="text-xs text-gray-500 whitespace-nowrap">
+      브러시 두께
+    </span>
+    <input
+      type="range"
+      min={isMobile ? 1 : 2}
+      max={isMobile ? 16 : 24}
+      step={1}
+      value={brushRadius}
+      onChange={(e) => setBrushRadius(Number(e.target.value))}
+      className="w-full"
+    />
+    <span className="text-xs text-gray-500 w-8 text-right">
+      {brushRadius}
+    </span>
+  </div>
+</div>
+
 
         {/* 오른쪽: 옵션 및 결과 */}
         <div className="space-y-6">
