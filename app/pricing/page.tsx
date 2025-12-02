@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, Sparkles, Crown, Star } from "lucide-react";
 import axios from "axios";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+
 type Plan = {
   id: string;
   name: string;
