@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
-import { Upload, Eraser, Wand2, Download, LogOut, Coins } from "lucide-react";
+import { Upload, Eraser, Download, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const API_URL =
@@ -11,7 +11,7 @@ const API_URL =
 
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
-  const [width, setWidth] = useState(400); // 반응형 기본값
+  const [width, setWidth] = useState(400); // 원본 기준 캔버스 폭
   const [height, setHeight] = useState(400);
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
@@ -22,17 +22,17 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
-  // ✅ 여기 두 줄 추가
-  const [brushRadius, setBrushRadius] = useState(15); // PC 기본, 모바일에서 줄여줄 값
-  const [isPinching, setIsPinching] = useState(false); // 핀치 줌 중인지 여부
-
   const [isGenerating, setIsGenerating] = useState(false);
-  const [fakeProgress, setFakeProgress] = useState(0);   // 0~100
-  const [statusMessage, setStatusMessage] = useState("AI가 변환 중입니다...");
+  const [fakeProgress, setFakeProgress] = useState(0); // 0~100
+  const [statusMessage, setStatusMessage] =
+    useState("AI가 변환 중입니다...");
 
-   // ✅ 추가: 모바일 여부 & 줌 배율
+  // ✅ 모바일 여부 & 줌 배율
   const [isMobile, setIsMobile] = useState(false);
   const [zoom, setZoom] = useState(1);
+
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 2.5;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -40,14 +40,13 @@ export default function Dashboard() {
     }
   }, []);
 
-    // ✅ AI 변환 대기 시간 동안 보여줄 가짜 프로그레스 타이머
+  // ✅ AI 변환 대기 시간 동안 보여줄 가짜 프로그레스 타이머
   useEffect(() => {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 15000; // 15초 동안 0 → 90% 까지 올라가도록
+    const total = 15000; // 15초 동안 0 → 90%
 
-    // 시작할 때 최소 5% 정도 보이게
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
 
@@ -58,7 +57,6 @@ export default function Dashboard() {
       setFakeProgress((prev) => (target > prev ? target : prev));
     }, 300);
 
-    // isGenerating 이 false 로 바뀌면 타이머 정리
     return () => clearInterval(id);
   }, [isGenerating]);
 
@@ -85,7 +83,7 @@ export default function Dashboard() {
       });
       setCredits(res.data.credits);
       setUserName(res.data.email.split("@")[0]);
-      setUserEmail(res.data.email);          // ✅ 그대로 저장
+      setUserEmail(res.data.email);
     } catch (err) {
       console.error("정보 불러오기 실패", err);
     }
@@ -105,42 +103,6 @@ export default function Dashboard() {
       fetchMyInfo();
     }
   }, [router]);
-
-    useEffect(() => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("hairfit_token") ||
-          localStorage.getItem("token")
-        : null;
-
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      router.push("/");
-    } else {
-      fetchMyInfo();
-    }
-  }, [router]);
-
-  // ✅ 화면 크기에 따라 브러시 크기 자동 조정
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const updateBrushRadius = () => {
-      const vw = window.innerWidth;
-      if (vw < 768) {
-        // 모바일 – 최대한 얇게
-        setBrushRadius(5);
-      } else {
-        // PC – 기존 느낌 유지
-        setBrushRadius(15);
-      }
-    };
-
-    updateBrushRadius();
-    window.addEventListener("resize", updateBrushRadius);
-    return () => window.removeEventListener("resize", updateBrushRadius);
-  }, []);
-
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,23 +133,22 @@ export default function Dashboard() {
 
         setWidth(newWidth);
         setHeight(newHeight);
-        setImage(result as string); // 이미 null 체크한 값 사용
+        setImage(result as string);
 
-// ✅ 확대/축소 상태 리셋
+        // ✅ 확대/축소 상태 리셋
         setZoom(1);
-
       };
     };
 
     reader.readAsDataURL(file);
   };
 
-    const handleGenerate = async () => {
+  const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
     if (credits <= 0) return alert("크레딧이 부족합니다!");
 
     setLoading(true);
-    setIsGenerating(true);        // ✅ 프로그레스 시작
+    setIsGenerating(true);
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
 
@@ -217,11 +178,9 @@ export default function Dashboard() {
       setResult(response.data.result_url);
       setCredits(response.data.remaining_credits);
 
-      // ✅ 끝났으니 프로그레스 100%
       setFakeProgress(100);
       setStatusMessage("변환이 완료되었어요!");
 
-      // 1.5초 정도 보여주고 서서히 숨김
       setTimeout(() => {
         setFakeProgress(0);
       }, 1500);
@@ -233,9 +192,16 @@ export default function Dashboard() {
       alert("변환 실패. 잠시 후 다시 시도해주세요.");
     } finally {
       setLoading(false);
-      setIsGenerating(false);   // ✅ 타이머 useEffect 정지
+      setIsGenerating(false);
     }
   };
+
+  // ✅ 확대 적용된 실제 렌더링 크기 & 브러시 두께
+  const displayWidth = width * zoom;
+  const displayHeight = height * zoom;
+
+  const baseBrushRadius = isMobile ? 5 : 15; // 모바일 기본 더 얇게
+  const effectiveBrushRadius = baseBrushRadius / zoom; // 확대할수록 더 세밀하게
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
@@ -255,49 +221,43 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
-          {/* 우측 메뉴 영역 */}
-{/* 상단 메뉴 버튼 영역 */}
-<div
-  className="
-    mt-3 md:mt-0
-    grid grid-cols-2 md:flex
-    gap-2 md:gap-3
-    w-full md:w-auto
-  "
->
-  {/* 이용안내 */}
-  <button
-    onClick={() => router.push("/guide")}
-    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-indigo-100 whitespace-nowrap"
-  >
-    이용안내
-  </button>
+          {/* 상단 메뉴 버튼 영역 */}
+          <div
+            className="
+              mt-3 md:mt-0
+              grid grid-cols-2 md:flex
+              gap-2 md:gap-3
+              w-full md:w-auto
+            "
+          >
+            <button
+              onClick={() => router.push("/guide")}
+              className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-indigo-100 whitespace-nowrap"
+            >
+              이용안내
+            </button>
 
-  {/* 크레딧 충전 */}
-  <button
-    onClick={() => router.push("/pricing")}
-    className="inline-flex items-center justify-center rounded-full border border-yellow-300 bg-yellow-50 text-yellow-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-yellow-100 whitespace-nowrap"
-  >
-    크레딧 충전
-  </button>
+            <button
+              onClick={() => router.push("/pricing")}
+              className="inline-flex items-center justify-center rounded-full border border-yellow-300 bg-yellow-50 text-yellow-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-yellow-100 whitespace-nowrap"
+            >
+              크레딧 충전
+            </button>
 
-  {/* 나의 이용 내역 */}
-  <button
-    onClick={() => router.push("/mypage")}
-    className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-red-100 whitespace-nowrap"
-  >
-    나의 이용 내역
-  </button>
+            <button
+              onClick={() => router.push("/mypage")}
+              className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-red-100 whitespace-nowrap"
+            >
+              나의 이용 내역
+            </button>
 
-  {/* 로그아웃 – 동일 디자인으로 통일 */}
-  <button
-    onClick={handleLogout}
-    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-slate-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-slate-50 whitespace-nowrap"
-  >
-    로그아웃
-  </button>
-</div>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-slate-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-slate-50 whitespace-nowrap"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -324,84 +284,86 @@ export default function Dashboard() {
 
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
-  <div
-    className="
-      relative border-2 border-dashed border-gray-300 rounded-xl 
-      bg-gray-50 flex items-center justify-center w-full 
-      overflow-auto              /* ✅ 스크롤 가능 */
-      touch-pan-y                /* ✅ 세로 스크롤 유지 */
-    "
-    style={{
-      maxWidth: width,
-      height: height > 0 ? height : 300,
-    }}
-  >
-    {!image ? (
-      <p className="text-gray-400 text-sm md:text-base">
-        사진을 올려주세요
-      </p>
-    ) : (
-      // ✅ 실제 이미지 + 캔버스를 zoom 값으로 스케일
-      <div
-        className="relative"
-        style={{
-          width,
-          height,
-          transform: `scale(${zoom})`,
-          transformOrigin: "center center",
-        }}
-      >
-        <img
-          src={image}
-          alt="Original"
-          className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
-        />
-        <CanvasDraw
-          ref={canvasRef}
-          brushColor="rgba(255, 255, 255, 0.8)"
-          brushRadius={isMobile ? 4 : 15}   // ✅ 여기서 모바일 브러시 크기 줄이기
-          lazyRadius={0}
-          canvasWidth={width}
-          canvasHeight={height}
-          hideGrid={true}
-          backgroundColor="transparent"
-          className="absolute top-0 left-0"
-        />
-      </div>
-    )}
-  </div>
-</div>
-{/* ✅ 확대/축소 컨트롤 (특히 모바일용) */}
-{image && (
-  <div className="mt-4 flex items-center gap-3">
-    <span className="text-xs text-gray-500 whitespace-nowrap">
-      확대/축소
-    </span>
-    <button
-      type="button"
-      onClick={() => setZoom((z) => Math.max(0.8, +(z - 0.2).toFixed(1)))}
-      className="px-2 py-1 text-xs rounded-full border border-gray-300 bg-white"
-    >
-      -
-    </button>
-    <input
-      type="range"
-      min={0.8}
-      max={2}
-      step={0.1}
-      value={zoom}
-      onChange={(e) => setZoom(parseFloat(e.target.value))}
-      className="flex-1 accent-indigo-500"
-    />
-    <button
-      type="button"
-      onClick={() => setZoom((z) => Math.min(2, +(z + 0.2).toFixed(1)))}
-      className="px-2 py-1 text-xs rounded-full border border-gray-300 bg-white"
-    >
-      +
-    </button>
-  </div>
-)}
+            <div
+              className="
+                relative border-2 border-dashed border-gray-300 rounded-xl 
+                bg-gray-50 flex items-center justify-center w-full 
+                overflow-hidden
+              "
+              style={{
+                maxWidth: displayWidth,
+                height: displayHeight > 0 ? displayHeight : 300,
+              }}
+            >
+              {!image ? (
+                <p className="text-gray-400 text-sm md:text-base">
+                  사진을 올려주세요
+                </p>
+              ) : (
+                <>
+                  <img
+                    src={image}
+                    alt="Original"
+                    className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
+                  />
+                  <CanvasDraw
+                    ref={canvasRef}
+                    brushColor="rgba(255, 255, 255, 0.8)"
+                    brushRadius={effectiveBrushRadius}
+                    lazyRadius={0}
+                    canvasWidth={displayWidth}
+                    canvasHeight={displayHeight}
+                    hideGrid={true}
+                    backgroundColor="transparent"
+                    className="absolute top-0 left-0"
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 확대/축소 컨트롤 */}
+          {image && (
+            <div className="mt-4 flex items-center gap-3">
+              <span className="text-xs text-gray-500 whitespace-nowrap">
+                확대/축소
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setZoom((z) =>
+                    Math.max(MIN_ZOOM, +(z - 0.25).toFixed(2))
+                  )
+                }
+                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600"
+              >
+                -
+              </button>
+              <input
+                type="range"
+                min={MIN_ZOOM}
+                max={MAX_ZOOM}
+                step={0.05}
+                value={zoom}
+                onChange={(e) =>
+                  setZoom(parseFloat(e.target.value))
+                }
+                className="flex-1 accent-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setZoom((z) =>
+                    Math.min(MAX_ZOOM, +(z + 0.25).toFixed(2))
+                  )
+                }
+                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600"
+              >
+                +
+              </button>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={() => canvasRef.current?.undo()}
@@ -468,32 +430,36 @@ export default function Dashboard() {
               </div>
 
               {/* AI 변환 버튼 + 진행 바 */}
-<div className="mt-4">
-  <button
-    onClick={handleGenerate}
-    disabled={isGenerating || !image}
-    className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-3 font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
-  >
-    {isGenerating ? "AI가 변환 중입니다..." : "AI 변환 시작 (1 크레딧 차감)"}
-  </button>
+              <div className="mt-4">
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !image}
+                  className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-3 font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isGenerating
+                    ? "AI가 변환 중입니다..."
+                    : "AI 변환 시작 (1 크레딧 차감)"}
+                </button>
 
-  {/* 진행 바 영역 */}
-  {(isGenerating || fakeProgress > 0) && (
-    <div className="mt-3">
-      <div className="mb-1 flex items-center justify-between text-[11px] text-gray-500">
-        <span>{statusMessage}</span>
-        {isGenerating && <span>{fakeProgress}%</span>}
-        {!isGenerating && fakeProgress === 100 && <span>완료!</span>}
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 transition-all duration-300"
-          style={{ width: `${Math.max(5, fakeProgress)}%` }} // 최소 5%는 보이게
-        />
-      </div>
-    </div>
-  )}
-</div>
+                {(isGenerating || fakeProgress > 0) && (
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-[11px] text-gray-500">
+                      <span>{statusMessage}</span>
+                      {isGenerating && <span>{fakeProgress}%</span>}
+                      {!isGenerating &&
+                        fakeProgress === 100 && <span>완료!</span>}
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 transition-all duration-300"
+                        style={{
+                          width: `${Math.max(5, fakeProgress)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
