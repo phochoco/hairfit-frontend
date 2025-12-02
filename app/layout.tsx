@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hairfit AI",
-  description: "헤어핏 AI 스타일링 솔루션",
+  title: "Re-Fac Art",
+  description: "리펙아트 스타일링 솔루션",
 };
 
 export default function RootLayout({

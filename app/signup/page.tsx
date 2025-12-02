@@ -43,7 +43,7 @@ export default function SignupPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-          HairFit AI 회원가입
+          Re-Fac Art 회원가입
         </h1>
         <p className="text-center text-gray-500 mb-8">
           미용실 원장님 전용 계정을 생성합니다.

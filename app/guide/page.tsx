@@ -17,7 +17,7 @@ export default function GuidePage() {
                 이용안내 👋
               </h1>
               <p className="mt-3 text-sm md:text-base text-slate-700 leading-relaxed">
-                HairFit은 머리는 그대로 두고
+                Re-Fac Art는 머리는 그대로 두고
                 <br className="md:hidden" />
                 <span className="hidden md:inline">, </span>
                 얼굴만 AI로 자연스럽게 바꿔주는 서비스입니다.
@@ -40,7 +40,7 @@ export default function GuidePage() {
           {/* 1. 서비스 소개 */}
           <section className="rounded-2xl bg-white px-5 py-5 shadow-sm border border-slate-100">
             <h2 className="text-base md:text-lg font-semibold mb-3">
-              1. HairFit은 어떤 서비스인가요? 💇‍♀️
+              1. Re-Fac Art는 어떤 서비스인가요? 💇‍♀️
             </h2>
             <ul className="space-y-2 leading-relaxed">
               <li>• 머리는 그대로 두고, 얼굴만 AI로 자연스럽게 바뀝니다.</li>
@@ -121,7 +121,7 @@ export default function GuidePage() {
               onClick={() => router.push("/dashboard")}
               className="mt-3 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-2.5 text-sm md:text-base font-medium text-white shadow-sm hover:bg-indigo-700"
             >
-              HairFit 시작하기 ✨
+              Re-Fac Art 시작하기 ✨
             </button>
           </section>
         </div>

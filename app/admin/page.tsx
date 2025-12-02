@@ -270,7 +270,7 @@ export default function AdminPage() {
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              👑 HairFit 관리자 페이지
+              👑 Re-Fac Art 관리자 페이지
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               회원 크레딧 / 플랜 / 생성 로그를 한 눈에 관리하는 어드민 콘솔입니다.
