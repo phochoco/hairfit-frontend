@@ -180,14 +180,6 @@ export default function Dashboard() {
     <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
     <span>나의 이용 내역</span>
   </button>
-
-  {/* 현재 플랜 pill (심플 버전, user 사용 안 함) */}
-<button
-  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-sm px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
->
-  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-  <span>현재 플랜</span>
-</button>
   {/* 로그아웃 pill */}
 <button
   onClick={() => {
