@@ -361,6 +361,11 @@ export default function Dashboard() {
                     hideGrid={true}
                     backgroundColor="transparent"
                     className="absolute inset-0"
+                    style={{
+                    cursor: image
+                    ? "url('/pen-cursor.png') 16 56, crosshair"
+                    : "default",
+                    }}
                   />
                 </>
               )}
