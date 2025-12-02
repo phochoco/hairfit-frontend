@@ -162,7 +162,14 @@ export default function Dashboard() {
 
           {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
           <div className="flex items-center gap-3">
-
+            {/* 이용안내 */}
+<button
+  onClick={() => router.push("/guide")}
+  className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+>
+  <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2" />
+  <span>이용안내</span>
+</button>
   {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
