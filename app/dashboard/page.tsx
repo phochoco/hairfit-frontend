@@ -161,20 +161,29 @@ export default function Dashboard() {
           </div>
 
           {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
-          <div className="flex items-center gap-3">
-            {/* 이용안내 */}
-<button
-  onClick={() => router.push("/guide")}
-  className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+          {/* 우측 메뉴 영역 */}
+<div
+  className="
+    mt-3 md:mt-0
+    flex flex-wrap items-center
+    gap-2 md:gap-3
+    justify-start md:justify-end
+    max-w-full
+  "
 >
-  <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2" />
-  <span>이용안내</span>
-</button>
+  {/* 이용안내 */}
+  <button
+    onClick={() => router.push("/guide")}
+    className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+  >
+    <span className="mr-1 text-[10px] md:text-xs">●</span>
+    <span>이용안내</span>
+  </button>
+
   {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
-    className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 px-3 py-1 md:px-4 md:py-2 text-[13px]
- whitespace-nowrap"
+    className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
   >
     <span>크레딧 충전</span>
   </button>
@@ -182,27 +191,21 @@ export default function Dashboard() {
   {/* 나의 이용 내역 */}
   <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 px-3 py-1 md:px-4 md:py-2 text-[13px]
- whitespace-nowrap"
+    className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
   >
+    <span className="mr-1 text-[10px] md:text-xs">●</span>
     <span>나의 이용 내역</span>
   </button>
-  {/* 로그아웃 pill */}
-<button
-  onClick={() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("hairfit_token");
-      localStorage.removeItem("token");
-    }
-    router.push("/");
-  }}
-  className="inline-flex items-center rounded-full border border-gray-200 bg-purple-50 text-purple-700 shadow-sm px-3 py-1 md:px-4 md:py-2 text-[13px]
- whitespace-nowrap"
->
-  <span>로그아웃</span>
-</button>
-</div>
 
+  {/* 로그아웃 */}
+  <button
+    onClick={handleLogout}
+    className="inline-flex items-center rounded-full border border-slate-200 bg-white text-slate-600 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap shadow-sm hover:bg-slate-50"
+  >
+    <span className="mr-1">↪</span>
+    <span>로그아웃</span>
+  </button>
+</div>
         </div>
       </nav>
 
