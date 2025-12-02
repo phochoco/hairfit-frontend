@@ -11,7 +11,7 @@ const API_URL =
 
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
-  const [width, setWidth] = useState(400); // 원본 기준 캔버스 폭
+  const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(400);
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
@@ -22,17 +22,12 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
-  // 🔍 확대/축소 상태 (1 = 원본 크기)
-  const [zoom, setZoom] = useState(1);
-  const MIN_ZOOM = 1;
-  const MAX_ZOOM = 3.0;
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [fakeProgress, setFakeProgress] = useState(0); // 0~100
   const [statusMessage, setStatusMessage] =
     useState("AI가 변환 중입니다...");
 
-  // ✅ 모바일 여부 (브러시 크기 조절용)
+  // 📱 모바일 여부 (브러시 크기 조절용)
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -41,12 +36,12 @@ export default function Dashboard() {
     }
   }, []);
 
-  // ✅ AI 변환 대기 시간 동안 보여줄 가짜 프로그레스 타이머
+  // ⏳ AI 변환 가짜 프로그레스
   useEffect(() => {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 6000; // 6초 동안 0 → 90%
+    const total = 6000;
 
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
@@ -54,7 +49,6 @@ export default function Dashboard() {
     const id = setInterval(() => {
       const elapsed = Date.now() - start;
       const target = Math.min(90, Math.round((elapsed / total) * 90));
-
       setFakeProgress((prev) => (target > prev ? target : prev));
     }, 300);
 
@@ -121,12 +115,11 @@ export default function Dashboard() {
       img.onload = () => {
         const ratio = img.height / img.width;
 
-        // ✅ 화면 크기에 따라 캔버스 폭 조절 (모바일에서는 더 작게)
         let baseWidth = 500;
         if (typeof window !== "undefined") {
           const vw = window.innerWidth;
           if (vw < 768) {
-            baseWidth = vw - 48; // 좌우 padding 고려
+            baseWidth = vw - 48;
           }
         }
         const newWidth = Math.min(500, baseWidth);
@@ -135,9 +128,6 @@ export default function Dashboard() {
         setWidth(newWidth);
         setHeight(newHeight);
         setImage(result as string);
-
-        // 확대/축소 리셋
-        setZoom(1);
       };
     };
 
@@ -197,8 +187,8 @@ export default function Dashboard() {
     }
   };
 
-  // 📌 모바일에서는 브러시 기본 크기를 더 작게
-  const brushRadius = isMobile ? 8 : 15;
+  // 📌 모바일에선 더 얇은 브러시
+  const brushRadius = isMobile ? 5 : 15;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
@@ -293,15 +283,7 @@ export default function Dashboard() {
                   사진을 올려주세요
                 </p>
               ) : (
-                // ✅ 이미지 + 캔버스를 같이 확대/축소하는 래퍼
-                <div
-                  className="absolute inset-0 origin-center"
-                  style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "center center",
-                    transition: "transform 0.15s ease-out",
-                  }}
-                >
+                <>
                   <img
                     src={image}
                     alt="Original"
@@ -318,49 +300,10 @@ export default function Dashboard() {
                     backgroundColor="transparent"
                     className="absolute inset-0"
                   />
-                </div>
+                </>
               )}
             </div>
           </div>
-
-          {/* 확대/축소 컨트롤 */}
-          {image && (
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-xs text-gray-500 w-16 text-right">
-                확대/축소
-              </span>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setZoom((z) => Math.max(MIN_ZOOM, z - 0.2))
-                }
-                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 text-lg"
-              >
-                −
-              </button>
-
-              <input
-                type="range"
-                min={MIN_ZOOM}
-                max={MAX_ZOOM}
-                step={0.05}
-                value={zoom}
-                onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="flex-1 accent-indigo-500"
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setZoom((z) => Math.min(MAX_ZOOM, z + 0.2))
-                }
-                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 text-lg"
-              >
-                +
-              </button>
-            </div>
-          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button
