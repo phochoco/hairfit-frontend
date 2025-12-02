@@ -196,13 +196,13 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ 캔버스의 "실제" 픽셀 크기 (고정)
-// 줌은 CSS scale 로만 처리할 거라, 여기선 곱하지 않는다.
-const displayWidth = width;
-const displayHeight = height;
+  // ✅ 확대 적용된 실제 캔버스 픽셀 크기
+const displayWidth = width * zoom;
+const displayHeight = height * zoom;
 
 const baseBrushRadius = isMobile ? 5 : 15; // 모바일 기본 더 얇게
-const effectiveBrushRadius = baseBrushRadius / zoom; // 확대할수록 더 세밀하게
+// 확대할수록 더 세밀하게 그려지도록 반비례
+const effectiveBrushRadius = baseBrushRadius / zoom;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
@@ -285,47 +285,45 @@ const effectiveBrushRadius = baseBrushRadius / zoom; // 확대할수록 더 세�
 
           {/* 캔버스 영역 */}
 <div className="flex justify-center">
-  <div
-    className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
-    style={{
-      // ❗ 바깥 컨테이너는 항상 "기본 크기"만 유지
-      width: displayWidth,
-      height: displayHeight > 0 ? displayHeight : 300,
-    }}
-  >
-    {!image ? (
-      <p className="text-gray-400 text-sm md:text-base">
-        사진을 올려주세요
-      </p>
-    ) : (
-      // ✅ 안쪽 래퍼를 scale(zoom)으로 확대/축소
-      <div
-        className="relative"
-        style={{
-          width: displayWidth,
-          height: displayHeight,
-          transform: `scale(${zoom})`,
-          transformOrigin: "center center",
-        }}
-      >
-        <img
-          src={image}
-          alt="Original"
-          className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
-        />
-        <CanvasDraw
-          ref={canvasRef}
-          brushColor="rgba(255, 255, 255, 0.8)"
-          brushRadius={effectiveBrushRadius}
-          lazyRadius={0}
-          canvasWidth={displayWidth}
-          canvasHeight={displayHeight}
-          hideGrid={true}
-          backgroundColor="transparent"
-          className="absolute top-0 left-0"
-        />
-      </div>
-    )}
+  {/* 바깥 래퍼: 화면보다 커지면 스크롤로 이동 */}
+  <div className="w-full overflow-auto">
+    <div
+      className="relative border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex items-center justify-center mx-auto"
+      style={{
+        width: displayWidth,
+        height: displayHeight > 0 ? displayHeight : 300,
+      }}
+    >
+      {!image ? (
+        <p className="text-gray-400 text-sm md:text-base">
+          사진을 올려주세요
+        </p>
+      ) : (
+        <>
+          {/* ✅ 이미지와 캔버스를 동일한 픽셀 크기로 맞춰줌 */}
+          <img
+            src={image}
+            alt="Original"
+            className="absolute top-0 left-0 object-contain pointer-events-none"
+            style={{
+              width: displayWidth,
+              height: displayHeight,
+            }}
+          />
+          <CanvasDraw
+            ref={canvasRef}
+            brushColor="rgba(255, 255, 255, 0.8)"
+            brushRadius={effectiveBrushRadius}
+            lazyRadius={0}
+            canvasWidth={displayWidth}
+            canvasHeight={displayHeight}
+            hideGrid={true}
+            backgroundColor="transparent"
+            className="absolute top-0 left-0"
+          />
+        </>
+      )}
+    </div>
   </div>
 </div>
 
