@@ -196,12 +196,13 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ 확대 적용된 실제 렌더링 크기 & 브러시 두께
-  const displayWidth = width * zoom;
-  const displayHeight = height * zoom;
+  // ✅ 캔버스의 "실제" 픽셀 크기 (고정)
+// 줌은 CSS scale 로만 처리할 거라, 여기선 곱하지 않는다.
+const displayWidth = width;
+const displayHeight = height;
 
-  const baseBrushRadius = isMobile ? 5 : 15; // 모바일 기본 더 얇게
-  const effectiveBrushRadius = baseBrushRadius / zoom; // 확대할수록 더 세밀하게
+const baseBrushRadius = isMobile ? 5 : 15; // 모바일 기본 더 얇게
+const effectiveBrushRadius = baseBrushRadius / zoom; // 확대할수록 더 세밀하게
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
@@ -283,11 +284,11 @@ export default function Dashboard() {
           </div>
 
           {/* 캔버스 영역 */}
-          <div className="flex justify-center">
+<div className="flex justify-center">
   <div
     className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
     style={{
-      // ✅ 컨테이너 실제 가로·세로를 확대된 값으로 직접 지정
+      // ❗ 바깥 컨테이너는 항상 "기본 크기"만 유지
       width: displayWidth,
       height: displayHeight > 0 ? displayHeight : 300,
     }}
@@ -297,7 +298,16 @@ export default function Dashboard() {
         사진을 올려주세요
       </p>
     ) : (
-      <>
+      // ✅ 안쪽 래퍼를 scale(zoom)으로 확대/축소
+      <div
+        className="relative"
+        style={{
+          width: displayWidth,
+          height: displayHeight,
+          transform: `scale(${zoom})`,
+          transformOrigin: "center center",
+        }}
+      >
         <img
           src={image}
           alt="Original"
@@ -306,15 +316,15 @@ export default function Dashboard() {
         <CanvasDraw
           ref={canvasRef}
           brushColor="rgba(255, 255, 255, 0.8)"
-          brushRadius={effectiveBrushRadius}   // ✅ 앞에서 만든 값
+          brushRadius={effectiveBrushRadius}
           lazyRadius={0}
-          canvasWidth={displayWidth}          // ✅ 확대된 크기
+          canvasWidth={displayWidth}
           canvasHeight={displayHeight}
           hideGrid={true}
           backgroundColor="transparent"
           className="absolute top-0 left-0"
         />
-      </>
+      </div>
     )}
   </div>
 </div>
