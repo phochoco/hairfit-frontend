@@ -113,101 +113,98 @@ export default function Dashboard() {
   }, [router]);
 
   // 📷 이미지 업로드 + EXIF Orientation 보정
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    // exif-js로 Orientation 읽기
-    (EXIF as any).getData(file, function () {
-      const orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+  // exif-js로 Orientation 읽기
+  (EXIF as any).getData(file, function (this: any) {
+    const orientation = (EXIF as any).getTag(this, "Orientation") || 1;
 
-      const reader = new FileReader();
-      reader.onload = (ev: ProgressEvent<FileReader>) => {
-        const result = ev.target?.result;
-        if (!result) return;
+    const reader = new FileReader();
+    reader.onload = (ev: ProgressEvent<FileReader>) => {
+      const result = ev.target?.result;
+      if (!result) return;
 
-        const img = new Image();
-        img.onload = () => {
-          let w = img.width;
-          let h = img.height;
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
 
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-          // 5~8번은 가로/세로 뒤바뀜 → 캔버스 크기 바꿔주기
-          if (orientation > 4 && orientation < 9) {
-            canvas.width = h;
-            canvas.height = w;
-          } else {
-            canvas.width = w;
-            canvas.height = h;
+        if (orientation > 4 && orientation < 9) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        switch (orientation) {
+          case 2:
+            ctx.translate(w, 0);
+            ctx.scale(-1, 1);
+            break;
+          case 3:
+            ctx.translate(w, h);
+            ctx.rotate(Math.PI);
+            break;
+          case 4:
+            ctx.translate(0, h);
+            ctx.scale(1, -1);
+            break;
+          case 5:
+            ctx.rotate(0.5 * Math.PI);
+            ctx.translate(0, -h);
+            ctx.scale(1, -1);
+            break;
+          case 6:
+            ctx.rotate(0.5 * Math.PI);
+            ctx.translate(0, -h);
+            break;
+          case 7:
+            ctx.rotate(0.5 * Math.PI);
+            ctx.translate(w, -h);
+            ctx.scale(-1, 1);
+            break;
+          case 8:
+            ctx.rotate(-0.5 * Math.PI);
+            ctx.translate(-w, 0);
+            break;
+          default:
+            break;
+        }
+
+        ctx.drawImage(img, 0, 0);
+
+        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+        let baseWidth = 500;
+        if (typeof window !== "undefined") {
+          const vw = window.innerWidth;
+          if (vw < 768) {
+            baseWidth = vw - 48;
           }
+        }
+        const displayWidth = Math.min(500, baseWidth);
+        const displayHeight =
+          (canvas.height / canvas.width) * displayWidth;
 
-          // Orientation에 따른 회전/반전
-          switch (orientation) {
-            case 2: // 좌우반전
-              ctx.translate(w, 0);
-              ctx.scale(-1, 1);
-              break;
-            case 3: // 180도
-              ctx.translate(w, h);
-              ctx.rotate(Math.PI);
-              break;
-            case 4: // 상하반전
-              ctx.translate(0, h);
-              ctx.scale(1, -1);
-              break;
-            case 5: // 90도 회전 + 상하반전
-              ctx.rotate(0.5 * Math.PI);
-              ctx.translate(0, -h);
-              ctx.scale(1, -1);
-              break;
-            case 6: // 90도 회전
-              ctx.rotate(0.5 * Math.PI);
-              ctx.translate(0, -h);
-              break;
-            case 7: // 90도 회전 + 좌우반전
-              ctx.rotate(0.5 * Math.PI);
-              ctx.translate(w, -h);
-              ctx.scale(-1, 1);
-              break;
-            case 8: // -90도 회전
-              ctx.rotate(-0.5 * Math.PI);
-              ctx.translate(-w, 0);
-              break;
-            default:
-              break;
-          }
-
-          ctx.drawImage(img, 0, 0);
-
-          // 회전/보정된 이미지를 dataURL로 추출
-          const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-
-          // 화면에 표시할 크기 계산 (모바일은 화면 폭에 맞게)
-          let baseWidth = 500;
-          if (typeof window !== "undefined") {
-            const vw = window.innerWidth;
-            if (vw < 768) {
-              baseWidth = vw - 48; // 좌우 여백 고려
-            }
-          }
-          const displayWidth = Math.min(500, baseWidth);
-          const displayHeight =
-            (canvas.height / canvas.width) * displayWidth;
-
-          setWidth(displayWidth);
-          setHeight(displayHeight);
-          setImage(fixedDataUrl);
-        };
-
-        img.src = result as string;
+        setWidth(displayWidth);
+        setHeight(displayHeight);
+        setImage(fixedDataUrl);
       };
 
-      reader.readAsDataURL(file);
-    });
-  };
+      img.src = result as string;
+    };
+
+    reader.readAsDataURL(file);
+  });
+};
+
 
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
