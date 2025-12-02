@@ -76,17 +76,54 @@ const PLANS: Plan[] = [
 export default function PricingPage() {
   const router = useRouter();
 
-  const handleSelectPlan = (planId: string) => {
-    if (planId === "free") {
-      router.push("/dashboard");
-      return;
-    }
+  const handleSelectPlan = async (planId: string) => {
+  // Free 플랜은 결제 대신 바로 대시보드로
+  if (planId === "free") {
+    router.push("/dashboard");
+    return;
+  }
 
-    // TODO: 나중에 아임포트/PG 결제 연동 시 여기서 결제 플로우 시작
-    alert(
-      `플랜 선택: ${planId}\n\n추후 결제 시스템 연동 시 이 버튼에서 결제가 시작되도록 연결하면 됩니다.`
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("hairfit_token") ||
+        localStorage.getItem("token")
+      : null;
+
+  if (!token) {
+    alert("로그인이 필요합니다. 먼저 로그인 해주세요.");
+    router.push("/");
+    return;
+  }
+
+  try {
+    const res = await axios.post(
+      `${API_URL}/plans/apply`,
+      { plan_type: planId }, // "starter" | "pro" | "premium" | "ultra" | "studio"
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
-  };
+
+    const data = res.data as {
+      message: string;
+      plan_type: string;
+      credits: number;
+    };
+
+    alert(
+      `${data.message}\n\n현재 잔여 크레딧: ${data.credits.toLocaleString()}`
+    );
+
+    // 대시보드로 이동 → /users/me 다시 불러와서 크레딧 표시됨
+    router.push("/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("크레딧 적용에 실패했습니다. 잠시 후 다시 시도해주세요.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-slate-50">
