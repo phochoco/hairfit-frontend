@@ -145,7 +145,6 @@ export default function Dashboard() {
           return orientationMismatch;
         })();
 
-        // 회전 필요 여부
         const needRotate =
           orientation !== 1 || autoRotateNeeded ? true : false;
 
@@ -335,9 +334,6 @@ export default function Dashboard() {
                 maxWidth: width,
                 height: height > 0 ? height : 300,
                 touchAction: "pan-y", // 📱 모바일에서 pinch-zoom 방지
-                cursor: image
-                ? 'url("/pen-cursor.png") 16 56, crosshair'
-                : "default",
               }}
             >
               {!image ? (
@@ -362,9 +358,9 @@ export default function Dashboard() {
                     backgroundColor="transparent"
                     className="absolute inset-0"
                     style={{
-                    cursor: image
-                    ? "url('/pen-cursor.png') 16 56, crosshair"
-                    : "default",
+                      cursor: image
+                        ? "url('/pen-cursor.png') 16 56, crosshair"
+                        : "default",
                     }}
                   />
                 </>
@@ -373,44 +369,44 @@ export default function Dashboard() {
           </div>
 
           {/* 브러시 컨트롤 */}
-<div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
-  {/* 버튼 영역 */}
-  <div className="flex flex-row gap-2">
-    <button
-      onClick={() => canvasRef.current?.undo()}
-      className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
-    >
-      되돌리기
-    </button>
+          <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
+            {/* 버튼 영역 */}
+            <div className="flex flex-row gap-2">
+              <button
+                onClick={() => canvasRef.current?.undo()}
+                className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+              >
+                되돌리기
+              </button>
 
-    <button
-      onClick={() => canvasRef.current?.clear()}
-      className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
-    >
-      <Eraser size={14} /> 지우기
-    </button>
-  </div>
+              <button
+                onClick={() => canvasRef.current?.clear()}
+                className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
+              >
+                <Eraser size={14} /> 지우기
+              </button>
+            </div>
 
-  {/* 슬라이더 영역 */}
-  <div className="flex items-center gap-2 w-full md:flex-1">
-    <span className="text-xs text-gray-500 whitespace-nowrap">
-      브러시 두께
-    </span>
-    <input
-      type="range"
-      min={isMobile ? 1 : 2}
-      max={isMobile ? 16 : 24}
-      step={1}
-      value={brushRadius}
-      onChange={(e) => setBrushRadius(Number(e.target.value))}
-      className="w-full"
-    />
-    <span className="text-xs text-gray-500 w-8 text-right">
-      {brushRadius}
-    </span>
-  </div>
-</div>
-
+            {/* 슬라이더 영역 */}
+            <div className="flex items-center gap-2 w-full md:flex-1">
+              <span className="text-xs text-gray-500 whitespace-nowrap">
+                브러시 두께
+              </span>
+              <input
+                type="range"
+                min={isMobile ? 1 : 2}
+                max={isMobile ? 16 : 24}
+                step={1}
+                value={brushRadius}
+                onChange={(e) => setBrushRadius(Number(e.target.value))}
+                className="w-full"
+              />
+              <span className="text-xs text-gray-500 w-8 text-right">
+                {brushRadius}
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* 오른쪽: 옵션 및 결과 */}
         <div className="space-y-6">
