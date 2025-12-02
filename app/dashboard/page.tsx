@@ -162,48 +162,45 @@ export default function Dashboard() {
 
           {/* 오른쪽: 내 생성내역 / 인사말 / 로그아웃 */}
           {/* 우측 메뉴 영역 */}
+{/* 상단 메뉴 버튼 영역 */}
 <div
   className="
     mt-3 md:mt-0
-    flex flex-wrap items-center
+    grid grid-cols-2 md:flex
     gap-2 md:gap-3
-    justify-start md:justify-end
-    max-w-full
+    w-full md:w-auto
   "
 >
   {/* 이용안내 */}
   <button
     onClick={() => router.push("/guide")}
-    className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-indigo-100 whitespace-nowrap"
   >
-    <span className="mr-1 text-[10px] md:text-xs">●</span>
-    <span>이용안내</span>
+    이용안내
   </button>
 
   {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
-    className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-yellow-300 bg-yellow-50 text-yellow-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-yellow-100 whitespace-nowrap"
   >
-    <span>크레딧 충전</span>
+    크레딧 충전
   </button>
 
   {/* 나의 이용 내역 */}
   <button
     onClick={() => router.push("/mypage")}
-    className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-700 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+    className="inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-indigo-100 whitespace-nowrap"
   >
-    <span className="mr-1 text-[10px] md:text-xs">●</span>
-    <span>나의 이용 내역</span>
+    나의 이용 내역
   </button>
 
-  {/* 로그아웃 */}
+  {/* 로그아웃 – 동일 디자인으로 통일 */}
   <button
     onClick={handleLogout}
-    className="inline-flex items-center rounded-full border border-slate-200 bg-white text-slate-600 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap shadow-sm hover:bg-slate-50"
+    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-slate-700 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm hover:bg-slate-100 whitespace-nowrap"
   >
-    <span className="mr-1">↪</span>
-    <span>로그아웃</span>
+    로그아웃
   </button>
 </div>
         </div>
