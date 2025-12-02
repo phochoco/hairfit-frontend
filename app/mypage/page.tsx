@@ -156,7 +156,7 @@ export default function MyPage() {
               나의 이용 내역
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              헤어핏 AI 사용으로 차감된 크레딧과 이용 기록을 한눈에 확인할 수
+              리펙 아트 AI 사용으로 차감된 크레딧과 이용 기록을 한눈에 확인할 수
               있어요.
             </p>
           </div>

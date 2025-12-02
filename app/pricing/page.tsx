@@ -143,7 +143,7 @@ export default function PricingPage() {
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
   <div>
     <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-      HairFit 요금제
+      Re-Fac Art 요금제
     </h1>
     <p className="mt-2 text-sm md:text-base text-gray-500 leading-relaxed">
       “헤어는 그대로, 얼굴만 AI로 안전하게 생성합니다. 초상권 부담 없이 자유롭게 활용할 수 있는 스타일링 이미지 서비스입니다.”
