@@ -189,9 +189,9 @@ export default function Dashboard() {
     }
     router.push("/");
   }}
-  className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
+  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-purple-50 text-purple-700 shadow-sm px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm whitespace-nowrap"
 >
-  <span className="text-sm">↪</span>
+  <span className="h-2 w-2 rounded-full bg-purple-500">↪</span>
   <span>로그아웃</span>
 </button>
 </div>
