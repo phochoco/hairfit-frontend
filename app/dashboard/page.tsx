@@ -30,6 +30,16 @@ export default function Dashboard() {
   const [fakeProgress, setFakeProgress] = useState(0);   // 0~100
   const [statusMessage, setStatusMessage] = useState("AI가 변환 중입니다...");
 
+   // ✅ 추가: 모바일 여부 & 줌 배율
+  const [isMobile, setIsMobile] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMobile(window.innerWidth < 768);
+    }
+  }, []);
+
     // ✅ AI 변환 대기 시간 동안 보여줄 가짜 프로그레스 타이머
   useEffect(() => {
     if (!isGenerating) return;
@@ -162,6 +172,10 @@ export default function Dashboard() {
         setWidth(newWidth);
         setHeight(newHeight);
         setImage(result as string); // 이미 null 체크한 값 사용
+
+// ✅ 확대/축소 상태 리셋
+        setZoom(1);
+
       };
     };
 
@@ -311,52 +325,83 @@ export default function Dashboard() {
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
   <div
-    className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center w-full"
+    className="
+      relative border-2 border-dashed border-gray-300 rounded-xl 
+      bg-gray-50 flex items-center justify-center w-full 
+      overflow-auto              /* ✅ 스크롤 가능 */
+      touch-pan-y                /* ✅ 세로 스크롤 유지 */
+    "
     style={{
       maxWidth: width,
       height: height > 0 ? height : 300,
     }}
-    // ✅ 핀치 줌 감지: 두 손가락 이상이면 그리기 잠시 비활성화
-    onTouchStartCapture={(e) => {
-      if (e.touches.length > 1) {
-        setIsPinching(true);
-      }
-    }}
-    onTouchEndCapture={(e) => {
-      if (e.touches.length <= 1) {
-        setIsPinching(false);
-      }
-    }}
-    onTouchCancelCapture={() => setIsPinching(false)}
   >
-              {!image ? (
-                <p className="text-gray-400 text-sm md:text-base">
-                  사진을 올려주세요
-                </p>
-              ) : (
-                <>
-                  <img
-                    src={image}
-                    alt="Original"
-                    className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
-                  />
-                  <CanvasDraw
-  ref={canvasRef}
-  brushColor="rgba(255, 255, 255, 0.8)"
-  brushRadius={brushRadius}  // ✅ state 기반 (모바일/PC 다르게)
-  lazyRadius={0}
-  canvasWidth={width}
-  canvasHeight={height}
-  hideGrid={true}
-  backgroundColor="transparent"
-  className="absolute top-0 left-0"
-  disabled={isPinching}      // ✅ 핀치 중엔 그리기 비활성화
-/>
-                </>
-              )}
-            </div>
-          </div>
-
+    {!image ? (
+      <p className="text-gray-400 text-sm md:text-base">
+        사진을 올려주세요
+      </p>
+    ) : (
+      // ✅ 실제 이미지 + 캔버스를 zoom 값으로 스케일
+      <div
+        className="relative"
+        style={{
+          width,
+          height,
+          transform: `scale(${zoom})`,
+          transformOrigin: "center center",
+        }}
+      >
+        <img
+          src={image}
+          alt="Original"
+          className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
+        />
+        <CanvasDraw
+          ref={canvasRef}
+          brushColor="rgba(255, 255, 255, 0.8)"
+          brushRadius={isMobile ? 4 : 15}   // ✅ 여기서 모바일 브러시 크기 줄이기
+          lazyRadius={0}
+          canvasWidth={width}
+          canvasHeight={height}
+          hideGrid={true}
+          backgroundColor="transparent"
+          className="absolute top-0 left-0"
+        />
+      </div>
+    )}
+  </div>
+</div>
+{/* ✅ 확대/축소 컨트롤 (특히 모바일용) */}
+{image && (
+  <div className="mt-4 flex items-center gap-3">
+    <span className="text-xs text-gray-500 whitespace-nowrap">
+      확대/축소
+    </span>
+    <button
+      type="button"
+      onClick={() => setZoom((z) => Math.max(0.8, +(z - 0.2).toFixed(1)))}
+      className="px-2 py-1 text-xs rounded-full border border-gray-300 bg-white"
+    >
+      -
+    </button>
+    <input
+      type="range"
+      min={0.8}
+      max={2}
+      step={0.1}
+      value={zoom}
+      onChange={(e) => setZoom(parseFloat(e.target.value))}
+      className="flex-1 accent-indigo-500"
+    />
+    <button
+      type="button"
+      onClick={() => setZoom((z) => Math.min(2, +(z + 0.2).toFixed(1)))}
+      className="px-2 py-1 text-xs rounded-full border border-gray-300 bg-white"
+    >
+      +
+    </button>
+  </div>
+)}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={() => canvasRef.current?.undo()}
