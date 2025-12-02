@@ -335,6 +335,9 @@ export default function Dashboard() {
                 maxWidth: width,
                 height: height > 0 ? height : 300,
                 touchAction: "pan-y", // 📱 모바일에서 pinch-zoom 방지
+                cursor: image
+                ? 'url("/pen-cursor.png") 16 56, crosshair'
+                : "default",
               }}
             >
               {!image ? (
