@@ -22,6 +22,11 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
+  // 🔍 확대/축소 상태 (1 = 원본 크기)
+  const [zoom, setZoom] = useState(1);
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 3.0;
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [fakeProgress, setFakeProgress] = useState(0); // 0~100
   const [statusMessage, setStatusMessage] =
@@ -30,9 +35,6 @@ export default function Dashboard() {
   // ✅ 모바일 여부 & 줌 배율
   const [isMobile, setIsMobile] = useState(false);
   const [zoom, setZoom] = useState(1);
-
-  const MIN_ZOOM = 1;
-  const MAX_ZOOM = 3.0;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -45,7 +47,7 @@ export default function Dashboard() {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 15000; // 15초 동안 0 → 90%
+    const total = 6000; // 6초 동안 0 → 90%
 
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
@@ -196,15 +198,7 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ 확대 적용된 실제 캔버스 픽셀 크기
-const displayWidth = width * zoom;
-const displayHeight = height * zoom;
-
-const baseBrushRadius = isMobile ? 5 : 15; // 모바일 기본 더 얇게
-// 확대할수록 더 세밀하게 그려지도록 반비례
-const effectiveBrushRadius = baseBrushRadius / zoom;
-
-  return (
+return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
       {/* 상단 네비게이션 */}
       <nav className="mb-6 md:mb-8 bg-white px-4 py-3 md:p-4 rounded-xl shadow-sm">
@@ -285,89 +279,48 @@ const effectiveBrushRadius = baseBrushRadius / zoom;
 
           {/* 캔버스 영역 */}
 <div className="flex justify-center">
-  {/* 바깥 래퍼: 화면보다 커지면 스크롤로 이동 */}
-  <div className="w-full overflow-auto">
-    <div
-      className="relative border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex items-center justify-center mx-auto"
-      style={{
-        width: displayWidth,
-        height: displayHeight > 0 ? displayHeight : 300,
-      }}
-    >
-      {!image ? (
-        <p className="text-gray-400 text-sm md:text-base">
-          사진을 올려주세요
-        </p>
-      ) : (
-        <>
-          {/* ✅ 이미지와 캔버스를 동일한 픽셀 크기로 맞춰줌 */}
-          <img
-            src={image}
-            alt="Original"
-            className="absolute top-0 left-0 object-contain pointer-events-none"
-            style={{
-              width: displayWidth,
-              height: displayHeight,
-            }}
-          />
-          <CanvasDraw
-            ref={canvasRef}
-            brushColor="rgba(255, 255, 255, 0.8)"
-            brushRadius={effectiveBrushRadius}
-            lazyRadius={0}
-            canvasWidth={displayWidth}
-            canvasHeight={displayHeight}
-            hideGrid={true}
-            backgroundColor="transparent"
-            className="absolute top-0 left-0"
-          />
-        </>
-      )}
-    </div>
+  <div
+    className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center w-full"
+    style={{
+      maxWidth: width,
+      height: height > 0 ? height : 300,
+    }}
+  >
+    {!image ? (
+      <p className="text-gray-400 text-sm md:text-base">
+        사진을 올려주세요
+      </p>
+    ) : (
+      // ✅ 이미지 + 캔버스를 같이 확대/축소하는 래퍼
+      <div
+        className="absolute inset-0 origin-center"
+        style={{
+          transform: `scale(${zoom})`,
+          transformOrigin: "center center",
+          transition: "transform 0.15s ease-out",
+        }}
+      >
+        <img
+          src={image}
+          alt="Original"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        />
+        <CanvasDraw
+          ref={canvasRef}
+          brushColor="rgba(255, 255, 255, 0.8)"
+          // 🔽 실제 캔버스 크기는 그대로 유지
+          brushRadius={15}
+          lazyRadius={0}
+          canvasWidth={width}
+          canvasHeight={height}
+          hideGrid={true}
+          backgroundColor="transparent"
+          className="absolute inset-0"
+        />
+      </div>
+    )}
   </div>
 </div>
-
-          {/* 확대/축소 컨트롤 */}
-          {image && (
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-xs text-gray-500 whitespace-nowrap">
-                확대/축소
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setZoom((z) =>
-                    Math.max(MIN_ZOOM, +(z - 0.25).toFixed(2))
-                  )
-                }
-                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600"
-              >
-                -
-              </button>
-              <input
-                type="range"
-                min={MIN_ZOOM}
-                max={MAX_ZOOM}
-                step={0.05}
-                value={zoom}
-                onChange={(e) =>
-                  setZoom(parseFloat(e.target.value))
-                }
-                className="flex-1 accent-indigo-500"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setZoom((z) =>
-                    Math.min(MAX_ZOOM, +(z + 0.25).toFixed(2))
-                  )
-                }
-                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600"
-              >
-                +
-              </button>
-            </div>
-          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -384,6 +337,37 @@ const effectiveBrushRadius = baseBrushRadius / zoom;
             </button>
           </div>
         </div>
+
+        {/* 🔍 확대/축소 컨트롤 */}
+<div className="mt-4 flex items-center gap-3">
+  <span className="text-xs text-gray-500 w-16 text-right">확대/축소</span>
+
+  <button
+    type="button"
+    onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 0.2))}
+    className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 text-lg"
+  >
+    −
+  </button>
+
+  <input
+    type="range"
+    min={MIN_ZOOM}
+    max={MAX_ZOOM}
+    step={0.05}
+    value={zoom}
+    onChange={(e) => setZoom(parseFloat(e.target.value))}
+    className="flex-1 accent-indigo-500"
+  />
+
+  <button
+    type="button"
+    onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.2))}
+    className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 text-lg"
+  >
+    +
+  </button>
+</div>
 
         {/* 오른쪽: 옵션 및 결과 */}
         <div className="space-y-6">
