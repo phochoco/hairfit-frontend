@@ -20,7 +20,11 @@ export default function Dashboard() {
 
   const [credits, setCredits] = useState(0);
   const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");  // ✅ 추가
+  const [userEmail, setUserEmail] = useState("");
+
+  // ✅ 여기 두 줄 추가
+  const [brushRadius, setBrushRadius] = useState(15); // PC 기본, 모바일에서 줄여줄 값
+  const [isPinching, setIsPinching] = useState(false); // 핀치 줌 중인지 여부
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [fakeProgress, setFakeProgress] = useState(0);   // 0~100
@@ -91,6 +95,42 @@ export default function Dashboard() {
       fetchMyInfo();
     }
   }, [router]);
+
+    useEffect(() => {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("hairfit_token") ||
+          localStorage.getItem("token")
+        : null;
+
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      router.push("/");
+    } else {
+      fetchMyInfo();
+    }
+  }, [router]);
+
+  // ✅ 화면 크기에 따라 브러시 크기 자동 조정
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateBrushRadius = () => {
+      const vw = window.innerWidth;
+      if (vw < 768) {
+        // 모바일 – 최대한 얇게
+        setBrushRadius(5);
+      } else {
+        // PC – 기존 느낌 유지
+        setBrushRadius(15);
+      }
+    };
+
+    updateBrushRadius();
+    window.addEventListener("resize", updateBrushRadius);
+    return () => window.removeEventListener("resize", updateBrushRadius);
+  }, []);
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -270,13 +310,25 @@ export default function Dashboard() {
 
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
-            <div
-              className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center w-full"
-              style={{
-                maxWidth: width,
-                height: height > 0 ? height : 300,
-              }}
-            >
+  <div
+    className="relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center w-full"
+    style={{
+      maxWidth: width,
+      height: height > 0 ? height : 300,
+    }}
+    // ✅ 핀치 줌 감지: 두 손가락 이상이면 그리기 잠시 비활성화
+    onTouchStartCapture={(e) => {
+      if (e.touches.length > 1) {
+        setIsPinching(true);
+      }
+    }}
+    onTouchEndCapture={(e) => {
+      if (e.touches.length <= 1) {
+        setIsPinching(false);
+      }
+    }}
+    onTouchCancelCapture={() => setIsPinching(false)}
+  >
               {!image ? (
                 <p className="text-gray-400 text-sm md:text-base">
                   사진을 올려주세요
@@ -289,16 +341,17 @@ export default function Dashboard() {
                     className="absolute top-0 left-0 w-full h-full object-contain pointer-events-none"
                   />
                   <CanvasDraw
-                    ref={canvasRef}
-                    brushColor="rgba(255, 255, 255, 0.8)"
-                    brushRadius={15}
-                    lazyRadius={0}
-                    canvasWidth={width}
-                    canvasHeight={height}
-                    hideGrid={true}
-                    backgroundColor="transparent"
-                    className="absolute top-0 left-0"
-                  />
+  ref={canvasRef}
+  brushColor="rgba(255, 255, 255, 0.8)"
+  brushRadius={brushRadius}  // ✅ state 기반 (모바일/PC 다르게)
+  lazyRadius={0}
+  canvasWidth={width}
+  canvasHeight={height}
+  hideGrid={true}
+  backgroundColor="transparent"
+  className="absolute top-0 left-0"
+  disabled={isPinching}      // ✅ 핀치 중엔 그리기 비활성화
+/>
                 </>
               )}
             </div>
