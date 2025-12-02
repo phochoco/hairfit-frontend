@@ -166,7 +166,7 @@ export default function Dashboard() {
   {/* 크레딧 충전 */}
   <button
     onClick={() => router.push("/pricing")}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 transition"
+    className="flex items-center gap-2 px-4 py-2 rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700 shadow-sm hover:bg-yellow-100 transition"
   >
     <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
     <span>크레딧 충전</span>
