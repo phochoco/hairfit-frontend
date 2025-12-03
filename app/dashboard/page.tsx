@@ -38,8 +38,9 @@ export default function Dashboard() {
   // 1크레딧 / 2크레딧 모드
   const [mode, setMode] = useState<"basic" | "fullstyle">("basic");
 
-  // 🔵 프롬프트 버전 (V1 기존 / V2 초상권 강화)
-  const [promptVersion, setPromptVersion] = useState<"v1" | "v2">("v1");
+  // 🔵 프롬프트 버전 (V1 기존 / V2 초상권 / V3 확장)
+  const [promptVersion, setPromptVersion] =
+  useState<"v1" | "v2" | "v3">("v1");
 
   // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
