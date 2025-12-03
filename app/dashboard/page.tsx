@@ -38,6 +38,9 @@ export default function Dashboard() {
   // 1크레딧 / 2크레딧 모드
   const [mode, setMode] = useState<"basic" | "fullstyle">("basic");
 
+  // 🔵 프롬프트 버전 (V1 기존 / V2 초상권 강화)
+  const [promptVersion, setPromptVersion] = useState<"v1" | "v2">("v1");
+
   // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
 
@@ -289,50 +292,97 @@ export default function Dashboard() {
     img.src = image;
   };
 
-  // 결과 이미지 방향을 입력 방향에 맞춰 자동 보정
+  // 결과 이미지 방향을 입력 방향에 맞춰 자동 보정 + 로그/에러 방어
   const fixResultOrientation = (
     src: string,
     desired: Orientation
   ): Promise<string> => {
     return new Promise((resolve) => {
+      console.log("[fixResultOrientation] start", { src, desired });
+
       const img = new Image();
+
+      // CORS 문제 파악용
       img.crossOrigin = "anonymous";
+
       img.onload = () => {
-        const w = img.naturalWidth;
-        const h = img.naturalHeight;
-        const current = getOrientation(w, h);
+        try {
+          const w = img.naturalWidth;
+          const h = img.naturalHeight;
+          const current = getOrientation(w, h);
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
+          console.log("[fixResultOrientation] onload", {
+            width: w,
+            height: h,
+            current,
+            desired,
+          });
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            console.warn("[fixResultOrientation] no 2d context, return src");
+            resolve(src);
+            return;
+          }
+
+          // 방향이 같으면 그냥 다시 인코딩(EXIF 제거용)
+          if (current === desired) {
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img, 0, 0);
+            try {
+              const out = canvas.toDataURL("image/jpeg", 0.95);
+              console.log(
+                "[fixResultOrientation] same orientation, re-encode only"
+              );
+              resolve(out);
+            } catch (err) {
+              console.error(
+                "[fixResultOrientation] toDataURL error(same orientation)",
+                err
+              );
+              resolve(src);
+            }
+            return;
+          }
+
+          // 👉 방향이 다르면 90도 회전해서 맞춰줌
+          canvas.width = h;
+          canvas.height = w;
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((90 * Math.PI) / 180);
+          ctx.drawImage(img, -w / 2, -h / 2);
+
+          try {
+            const rotated = canvas.toDataURL("image/jpeg", 0.95);
+            console.log(
+              "[fixResultOrientation] rotated 90deg to match desired"
+            );
+            resolve(rotated);
+          } catch (err) {
+            console.error(
+              "[fixResultOrientation] toDataURL error(rotated)",
+              err
+            );
+            resolve(src);
+          }
+        } catch (err) {
+          console.error("[fixResultOrientation] onload handler error", err);
           resolve(src);
-          return;
         }
-
-        // 방향이 같으면 그대로 다시 인코딩 (EXIF 제거용)
-        if (current === desired) {
-          canvas.width = w;
-          canvas.height = h;
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/jpeg", 0.95));
-          return;
-        }
-
-        // 방향이 다르면 90도 회전해서 맞춰줌
-        canvas.width = h;
-        canvas.height = w;
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((90 * Math.PI) / 180);
-        ctx.drawImage(img, -w / 2, -h / 2);
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
       };
 
-      img.onerror = () => {
-        // 실패해도 원본 URL을 그대로 사용 (최악의 경우)
+      img.onerror = (e) => {
+        console.error("[fixResultOrientation] onerror", e);
         resolve(src);
       };
 
-      img.src = src;
+      // 캐시 우회용 파라미터 추가
+      const urlWithBust =
+        src + (src.includes("?") ? "&" : "?") + "cbuster=" + Date.now();
+
+      img.src = urlWithBust;
     });
   };
 
@@ -355,38 +405,64 @@ export default function Dashboard() {
     setStatusMessage("AI가 변환 중입니다...");
 
     try {
-      // 서버에는 항상 image(dataURL) + maskData만 전달 (File 절대 X)
+      console.log("[handleGenerate] inputOrientation:", inputOrientation);
+      console.log("[handleGenerate] image dataURL length:", image.length);
+      console.log(
+        "[handleGenerate] image dataURL preview:",
+        image.slice(0, 80)
+      );
+
       const maskData = canvasRef.current.getDataURL(
         "image/png",
         false,
         "#000000"
       );
+      console.log(
+        "[handleGenerate] mask dataURL length:",
+        maskData.length
+      );
+
       const token =
         localStorage.getItem("hairfit_token") ||
         localStorage.getItem("token");
 
-      // 모드별 엔드포인트 분기
       const endpoint =
         mode === "fullstyle"
           ? `${API_URL}/generate/fullstyle`
           : `${API_URL}/generate/`;
 
-      const response = await axios.post(
-        endpoint,
-        {
-          image_url: image,
-          mask_url: maskData,
-          gender,
-          age,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      console.log("[handleGenerate] endpoint:", endpoint);
 
-      const rawUrl = response.data.result_url as string;
-      // 입력 방향에 맞춰 결과 방향 자동 보정
+      // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
+      const payload: any = {
+        image_url: image,
+        mask_url: maskData,
+        gender,
+        age,
+      };
+
+      if (mode === "basic") {
+        payload.prompt_version = promptVersion;
+      }
+
+      console.log("[handleGenerate] sending payload:", {
+        ...payload,
+        image_url_len: image.length,
+        mask_url_len: maskData.length,
+      });
+
+      const response = await axios.post(endpoint, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const rawUrl = response.data.result_url;
+      console.log("[handleGenerate] raw FLUX url:", rawUrl);
+
       const fixed = await fixResultOrientation(rawUrl, inputOrientation);
+      console.log(
+        "[handleGenerate] fixed result url (after canvas):",
+        fixed.slice(0, 80)
+      );
 
       setResult(fixed);
       setCredits(response.data.remaining_credits);
@@ -400,7 +476,7 @@ export default function Dashboard() {
 
       alert("변환 성공!");
     } catch (error) {
-      console.error(error);
+      console.error("[handleGenerate] ERROR:", error);
       setStatusMessage("오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
       alert("변환 실패. 잠시 후 다시 시도해주세요.");
     } finally {
@@ -601,7 +677,7 @@ export default function Dashboard() {
                     </span>
                     <span className="font-medium">얼굴 중심</span>
                     <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴 표정·디테일 위주
+                      헤어는 유지, 얼굴 교체(테스트용 V1/V2 선택 가능)
                     </span>
                   </button>
 
@@ -625,6 +701,47 @@ export default function Dashboard() {
                     </span>
                   </button>
                 </div>
+              </div>
+
+              {/* 프롬프트 버전 선택 (basic 모드 전용 테스트용) */}
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  프롬프트 버전 (1 크레딧 얼굴 교체 테스트용)
+                </label>
+                <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setPromptVersion("v1")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                      promptVersion === "v1"
+                        ? "border-slate-800 bg-slate-900 text-white"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-semibold">V1 기존 버전</span>
+                    <span className="text-[11px] text-gray-300 md:text-gray-500">
+                      현재 운영 중인 로직
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPromptVersion("v2")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                      promptVersion === "v2"
+                        ? "border-slate-800 bg-slate-900 text-white"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-semibold">V2 초상권 강화</span>
+                    <span className="text-[11px] text-gray-300 md:text-gray-500">
+                      본인과 다른 얼굴 생성에 집중
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  ※ 현재는 1 크레딧 모드에서만 적용됩니다. 2 크레딧
+                  fullstyle은 추후 분리 예정.
+                </p>
               </div>
 
               <div>
