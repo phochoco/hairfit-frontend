@@ -38,9 +38,9 @@ export default function Dashboard() {
   // 1크레딧 / 2크레딧 모드
   const [mode, setMode] = useState<"basic" | "fullstyle">("basic");
 
-  // 🔵 프롬프트 버전 (V1 기존 / V2 초상권 / V3 확장)
+  // 🔵 프롬프트 버전 (V3 확장)
   const [promptVersion, setPromptVersion] =
-  useState<"v1" | "v2" | "v3">("v1");
+  useState<"v3" | "v3_random">("v3");
 
   // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
@@ -705,59 +705,62 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 🔥 여기부터 프롬프트 버전 선택 (V1/V2/V3) 추가 */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  얼굴 교체 스타일
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs md:text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setPromptVersion("v1")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      promptVersion === "v1"
-                        ? "border-slate-800 bg-slate-900 text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">V1 자연 교체</span>
-                    <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      자연스러운 얼굴 교체 (기본 추천)
-                    </span>
-                  </button>
+                         {/* 프롬프트 버전 선택 (basic 모드 전용 테스트용) */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">
+                프롬프트 버전 (1 크레딧 얼굴 교체 전용)
+              </label>
+              <p className="text-[11px] text-gray-400 mb-2">
+                V3 강화 버전과 V3 랜덤 인물 스타일러 중에서 선택할 수 있습니다.
+              </p>
 
-                  <button
-                    type="button"
-                    onClick={() => setPromptVersion("v2")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      promptVersion === "v2"
-                        ? "border-slate-800 bg-slate-900 text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">V2 초상권 강화</span>
-                    <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      원본과 확실히 다른 사람으로 교체
-                    </span>
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
+                {/* V3 기본 강화 버전 */}
+                <button
+                  type="button"
+                  onClick={() => setPromptVersion("v3")}
+                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                    promptVersion === "v3"
+                      ? "border-slate-800 bg-slate-900 text-white"
+                      : "border-gray-200 bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <span className="font-semibold">V3 강화 버전 (권장)</span>
+                  <span className="text-[11px] text-gray-300 md:text-gray-500">
+                    헤어/배경은 그대로 두고, 얼굴만 자연스럽게 다른 사람으로 교체하는
+                    기본 하이브리드 버전입니다.
+                  </span>
+                  <span className="mt-1 text-[11px] text-gray-400">
+                    원본과는 다른 인물이지만, 헤어 실루엣과 전체 분위기를 최대한 유지합니다.
+                  </span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPromptVersion("v3")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      promptVersion === "v3"
-                        ? "border-slate-800 bg-slate-900 text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">V3 하이브리드</span>
-                    <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      모델 화보 느낌 + 초상권 안전
-                    </span>
-                  </button>
-                </div>
+                {/* V3 Random 인물 스타일러 */}
+                <button
+                  type="button"
+                  onClick={() => setPromptVersion("v3_random")}
+                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                    promptVersion === "v3_random"
+                      ? "border-slate-800 bg-slate-900 text-white"
+                      : "border-gray-200 bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <span className="font-semibold">V3 랜덤 인물 스타일러</span>
+                  <span className="text-[11px] text-gray-300 md:text-gray-500">
+                    헤어는 그대로 두고, 얼굴은 원본과 닮지 않도록 더 강하게 랜덤 교체하는
+                    초상권 안전 모드입니다.
+                  </span>
+                  <span className="mt-1 text-[11px] text-gray-400">
+                    같은 사진으로 여러 버전의 &quot;완전 다른 모델 컷&quot;을 만들고 싶을 때 사용하세요.
+                  </span>
+                </button>
               </div>
-              {/* 🔥 여기까지 추가 */}
+
+              <p className="mt-1 text-[11px] text-gray-400">
+                ※ 현재는 1 크레딧 모드에서만 적용됩니다. 2 크레딧 fullstyle에도
+                동일한 얼굴 교체 로직을 순차적으로 반영할 예정입니다.
+              </p>
+            </div>
 
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
