@@ -705,9 +705,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
-
-  {/* V3 강화 버전 */}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
+  {/* V3 기본 */}
   <button
     type="button"
     onClick={() => setPromptVersion("v3")}
@@ -719,14 +718,11 @@ export default function Dashboard() {
   >
     <span className="font-semibold">V3 강화 버전 (추천)</span>
     <span className="text-[11px]">
-      헤어는 유지하고 얼굴만 자연스럽게 대체하는 기본 모델.
-    </span>
-    <span className="text-[10px] text-gray-400">
-      자연스럽고 안정적인 SNS 업로드용.
+      헤어 유지 · 얼굴만 자연스럽게 교체.
     </span>
   </button>
 
-  {/* V3 랜덤 인물 스타일러 */}
+  {/* V3 랜덤 */}
   <button
     type="button"
     onClick={() => setPromptVersion("v3_random")}
@@ -738,13 +734,9 @@ export default function Dashboard() {
   >
     <span className="font-semibold">V3 랜덤 인물 스타일러</span>
     <span className="text-[11px]">
-      헤어 유지 + 얼굴은 매번 다른 인물로 교체.
-    </span>
-    <span className="text-[10px] text-gray-400">
-      초상권 100% 안전, 다양한 모델컷 생성.
+      헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드.
     </span>
   </button>
-
 </div>
 
               <div>
