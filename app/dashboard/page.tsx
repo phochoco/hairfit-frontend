@@ -678,53 +678,6 @@ export default function Dashboard() {
                     </span>
                     <span className="font-medium">얼굴 중심</span>
                     <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴 교체(테스트용 V1/V2 선택 가능)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMode("fullstyle")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
-                      mode === "fullstyle"
-                        ? "border-purple-500 bg-purple-50 text-purple-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="text-[11px] font-semibold">
-                      2 크레딧
-                    </span>
-                    <span className="font-medium">
-                      얼굴+의상+배경 프리미엄
-                    </span>
-                    <span className="text-[11px] text-gray-500">
-                      헤어는 유지하고 전체 분위기까지 변경
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 프롬프트 버전 선택 (basic 모드 전용 테스트용) */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  생성 모드
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {/* 1크레딧 기본 모드 */}
-                  <button
-                    type="button"
-                    onClick={() => setMode("basic")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
-                      mode === "basic"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="text-[11px] font-semibold">
-                      1 크레딧
-                    </span>
-                    <span className="font-medium">얼굴 중심</span>
-                    <span className="text-[11px] text-gray-500">
                       헤어는 유지, 얼굴 표정·디테일 위주
                     </span>
                   </button>
