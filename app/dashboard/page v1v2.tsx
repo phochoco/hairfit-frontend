@@ -706,57 +706,9 @@ export default function Dashboard() {
               {/* 프롬프트 버전 선택 (basic 모드 전용 테스트용) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  생성 모드
+                  프롬프트 버전 (1 크레딧 얼굴 교체 테스트용)
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {/* 1크레딧 기본 모드 */}
-                  <button
-                    type="button"
-                    onClick={() => setMode("basic")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
-                      mode === "basic"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="text-[11px] font-semibold">
-                      1 크레딧
-                    </span>
-                    <span className="font-medium">얼굴 중심</span>
-                    <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴 표정·디테일 위주
-                    </span>
-                  </button>
-
-                  {/* 2크레딧 fullstyle 모드 */}
-                  <button
-                    type="button"
-                    onClick={() => setMode("fullstyle")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
-                      mode === "fullstyle"
-                        ? "border-purple-500 bg-purple-50 text-purple-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="text-[11px] font-semibold">
-                      2 크레딧
-                    </span>
-                    <span className="font-medium">
-                      얼굴+의상+배경 프리미엄
-                    </span>
-                    <span className="text-[11px] text-gray-500">
-                      헤어는 유지하고 전체 분위기까지 변경
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 🔥 여기부터 프롬프트 버전 선택 (V1/V2/V3) 추가 */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  얼굴 교체 스타일
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs md:text-sm">
+                <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                   <button
                     type="button"
                     onClick={() => setPromptVersion("v1")}
@@ -766,12 +718,11 @@ export default function Dashboard() {
                         : "border-gray-200 bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <span className="font-semibold">V1 자연 교체</span>
+                    <span className="font-semibold">V1 기존 버전</span>
                     <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      자연스러운 얼굴 교체 (기본 추천)
+                      현재 운영 중인 로직
                     </span>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => setPromptVersion("v2")}
@@ -783,27 +734,15 @@ export default function Dashboard() {
                   >
                     <span className="font-semibold">V2 초상권 강화</span>
                     <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      원본과 확실히 다른 사람으로 교체
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPromptVersion("v3")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      promptVersion === "v3"
-                        ? "border-slate-800 bg-slate-900 text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">V3 하이브리드</span>
-                    <span className="text-[11px] text-gray-300 md:text-gray-500">
-                      모델 화보 느낌 + 초상권 안전
+                      본인과 다른 얼굴 생성에 집중
                     </span>
                   </button>
                 </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  ※ 현재는 1 크레딧 모드에서만 적용됩니다. 2 크레딧
+                  fullstyle은 추후 분리 예정.
+                </p>
               </div>
-              {/* 🔥 여기까지 추가 */}
 
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
