@@ -123,9 +123,6 @@ export default function Dashboard() {
       const result = ev.target?.result;
       if (!result) return;
 
-      // 새 이미지 업로드 시 마스크 초기화
-      canvasRef.current?.clear?.();
-
       // ✅ 1) PC / 태블릿 넓은 화면: 예전처럼 그대로 사용 (회전 보정 X)
       if (!isMobile) {
         const img = new Image();
@@ -220,51 +217,6 @@ export default function Dashboard() {
     };
 
     reader.readAsDataURL(file);
-  };
-
-  // ✅ 업로드 후 수동으로 90° 회전하기 (PC/모바일 공통)
-  const handleRotateImage = () => {
-    if (!image) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const w = img.width;
-      const h = img.height;
-
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      // 90도 회전 → 가로/세로 스왑
-      canvas.width = h;
-      canvas.height = w;
-
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((90 * Math.PI) / 180);
-      ctx.drawImage(img, -w / 2, -h / 2);
-
-      const rotatedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-
-      // 화면 표시용 비율 재계산
-      let baseWidth = 500;
-      if (typeof window !== "undefined") {
-        const vw = window.innerWidth;
-        if (vw < 768) baseWidth = vw - 48;
-      }
-      const displayWidth = Math.min(500, baseWidth);
-      const displayHeight =
-        (canvas.height / canvas.width) * displayWidth;
-
-      // 새 이미지 + 크기 반영
-      setWidth(displayWidth);
-      setHeight(displayHeight);
-      setImage(rotatedDataUrl);
-
-      // 방향을 바꿨으니 기존 마스크는 초기화
-      canvasRef.current?.clear?.();
-    };
-
-    img.src = image;
   };
 
   const handleGenerate = async () => {
@@ -386,7 +338,7 @@ export default function Dashboard() {
             1. 사진 업로드 & 변경할 부분 색칠
           </h2>
 
-          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
+          <div className="mb-4">
             <label className="flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg transition text-sm md:text-base">
               <Upload size={18} />
               <span>고객 사진 선택하기</span>
@@ -397,16 +349,6 @@ export default function Dashboard() {
                 onChange={handleImageUpload}
               />
             </label>
-
-            {/* 새로 추가: 사진 90도 회전 버튼 */}
-            <button
-              type="button"
-              onClick={handleRotateImage}
-              disabled={!image}
-              className="mt-2 md:mt-0 inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 px-3 py-2 text-xs md:text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              사진 90° 회전
-            </button>
           </div>
 
           {/* 캔버스 영역 */}
