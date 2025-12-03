@@ -5,13 +5,19 @@ import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
 import { Upload, Eraser, Download, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
+import EXIF from "exif-js";
 
 const API_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
-type Mode = "basic" | "full"; // basic: 1크레딧, full: 2크레딧
+// 세로/가로 방향 타입
+type Orientation = "portrait" | "landscape";
+
+const getOrientation = (w: number, h: number): Orientation =>
+  h >= w ? "portrait" : "landscape";
 
 export default function Dashboard() {
+  // 항상 이 image(dataURL)만 "진짜 원본"으로 사용 (File은 업로드에 사용 X)
   const [image, setImage] = useState<string | null>(null);
   const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(400);
@@ -25,15 +31,19 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [fakeProgress, setFakeProgress] = useState(0); // 0~100
+  const [fakeProgress, setFakeProgress] = useState(0);
   const [statusMessage, setStatusMessage] =
     useState("AI가 변환 중입니다...");
 
-  // 📱 모바일 여부 (브러시 크기 조절용)
+  // 1크레딧 / 2크레딧 모드
+  const [mode, setMode] = useState<"basic" | "fullstyle">("basic");
+
+  // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
 
-  // 🔀 변환 모드: 기본(1크레딧) / 풀스타일(2크레딧)
-  const [mode, setMode] = useState<Mode>("basic");
+  // 현재 입력 이미지 방향(세로/가로)
+  const [inputOrientation, setInputOrientation] =
+    useState<Orientation>("portrait");
 
   useEffect(() => {
     const check = () => {
@@ -46,19 +56,19 @@ export default function Dashboard() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ✏️ 브러시 두께 (슬라이더용)
+  // 브러시 두께
   const [brushRadius, setBrushRadius] = useState(8);
 
   useEffect(() => {
-    setBrushRadius(isMobile ? 2 : 8); // 모바일 기본 2px, PC 기본 8px
+    setBrushRadius(isMobile ? 2 : 8);
   }, [isMobile]);
 
-  // ⏳ AI 변환 가짜 프로그레스
+  // 가짜 프로그레스
   useEffect(() => {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 10000; // 10초 기준
+    const total = 10000;
 
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
@@ -116,7 +126,7 @@ export default function Dashboard() {
     }
   }, [router]);
 
-  // 📷 이미지 업로드 (File → dataURL → image state만 사용)
+  // 📷 이미지 업로드 (File은 EXIF용으로만 쓰고, 서버 전송에는 절대 사용 X)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -125,36 +135,112 @@ export default function Dashboard() {
 
     reader.onload = (ev: ProgressEvent<FileReader>) => {
       const result = ev.target?.result;
-      if (!result || typeof result !== "string") return;
+      if (!result) return;
 
       // 새 이미지 업로드 시 마스크 초기화
       canvasRef.current?.clear?.();
 
+      // ✅ PC / 태블릿: EXIF 보정 없이 그대로 사용
+      if (!isMobile) {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.height / img.width;
+
+          let baseWidth = 500;
+          if (typeof window !== "undefined") {
+            const vw = window.innerWidth;
+            if (vw < 768) {
+              baseWidth = vw - 48;
+            }
+          }
+          const newWidth = Math.min(500, baseWidth);
+          const newHeight = newWidth * ratio;
+
+          setWidth(newWidth);
+          setHeight(newHeight);
+          setImage(result as string);
+          setInputOrientation(getOrientation(img.width, img.height));
+        };
+        img.src = result as string;
+        return;
+      }
+
+      // ✅ 모바일: EXIF + 자동 회전 로직
       const img = new Image();
       img.onload = () => {
-        const ratio = img.height / img.width;
+        let w = img.width;
+        let h = img.height;
+
+        // 1) EXIF Orientation 읽기
+        let orientation = 1;
+        try {
+          (EXIF as any).getData(file, function (this: any) {
+            orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+          });
+        } catch (err) {
+          console.warn("EXIF read failed, fallback to auto-rotate");
+        }
+
+        // 2) 화면 비율 기반 자동 감지
+        const autoRotateNeeded = (() => {
+          const isPortraitDisplay = window.innerWidth < window.innerHeight;
+          const orientationMismatch =
+            (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
+          return orientationMismatch;
+        })();
+
+        const needRotate =
+          orientation !== 1 || autoRotateNeeded ? true : false;
+
+        let rotateDeg = 0;
+
+        if (orientation === 6) rotateDeg = 90;
+        else if (orientation === 8) rotateDeg = -90;
+        else if (orientation === 3) rotateDeg = 180;
+        else if (autoRotateNeeded) rotateDeg = 90;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotateDeg * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2);
+
+        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
         let baseWidth = 500;
         if (typeof window !== "undefined") {
           const vw = window.innerWidth;
-          if (vw < 768) {
-            baseWidth = vw - 48;
-          }
+          if (vw < 768) baseWidth = vw - 48;
         }
-        const newWidth = Math.min(500, baseWidth);
-        const newHeight = newWidth * ratio;
+        const displayWidth = Math.min(500, baseWidth);
+        const displayHeight =
+          (canvas.height / canvas.width) * displayWidth;
 
-        setWidth(newWidth);
-        setHeight(newHeight);
-        setImage(result); // ✅ 이 이후로는 항상 이 image만 사용 (File은 잊어버림)
+        setWidth(displayWidth);
+        setHeight(displayHeight);
+        setImage(fixedDataUrl);
+        setInputOrientation(
+          getOrientation(canvas.width, canvas.height)
+        );
       };
-      img.src = result;
+
+      img.src = result as string;
     };
 
     reader.readAsDataURL(file);
   };
 
-  // ✅ 업로드 후 수동으로 90° 회전하기 (PC/모바일 공통)
+  // ↻ 업로드 후 수동 90° 회전 (PC/모바일 공통) — 항상 image를 덮어쓰기
   const handleRotateImage = () => {
     if (!image) return;
 
@@ -177,7 +263,6 @@ export default function Dashboard() {
 
       const rotatedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
-      // 화면 표시용 비율 재계산
       let baseWidth = 500;
       if (typeof window !== "undefined") {
         const vw = window.innerWidth;
@@ -187,24 +272,81 @@ export default function Dashboard() {
       const displayHeight =
         (canvas.height / canvas.width) * displayWidth;
 
-      // 새 이미지 + 크기 반영
+      // 화면에 보이는 이미지 = 서버로 업로드되는 유일한 이미지
       setWidth(displayWidth);
       setHeight(displayHeight);
-      setImage(rotatedDataUrl); // ✅ Flux는 항상 이 최종 방향만 본다
+      setImage(rotatedDataUrl);
 
-      // 방향을 바꿨으니 기존 마스크는 초기화
+      // 방향 토글
+      setInputOrientation((prev) =>
+        prev === "portrait" ? "landscape" : "portrait"
+      );
+
+      // 방향이 바뀌었으니 마스크 초기화
       canvasRef.current?.clear?.();
     };
 
     img.src = image;
   };
 
-  const handleGenerate = async () => {
-    if (!image) return alert("사진을 먼저 올려주세요.");
+  // 결과 이미지 방향을 입력 방향에 맞춰 자동 보정
+  const fixResultOrientation = (
+    src: string,
+    desired: Orientation
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const current = getOrientation(w, h);
 
-    const cost = mode === "basic" ? 1 : 2;
-    if (credits < cost) {
-      return alert(`${cost} 크레딧이 필요합니다. 크레딧을 충전해 주세요.`);
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(src);
+          return;
+        }
+
+        // 방향이 같으면 그대로 다시 인코딩 (EXIF 제거용)
+        if (current === desired) {
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/jpeg", 0.95));
+          return;
+        }
+
+        // 방향이 다르면 90도 회전해서 맞춰줌
+        canvas.width = h;
+        canvas.height = w;
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((90 * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2);
+        resolve(canvas.toDataURL("image/jpeg", 0.95));
+      };
+
+      img.onerror = () => {
+        // 실패해도 원본 URL을 그대로 사용 (최악의 경우)
+        resolve(src);
+      };
+
+      img.src = src;
+    });
+  };
+
+  // 1크레딧 / 2크레딧 공용 생성 함수
+  const handleGenerate = async () => {
+    if (!image) {
+      alert("사진을 먼저 올려주세요.");
+      return;
+    }
+
+    const needCredits = mode === "fullstyle" ? 2 : 1;
+    if (credits < needCredits) {
+      alert(`${needCredits} 크레딧이 필요합니다.`);
+      return;
     }
 
     setLoading(true);
@@ -213,6 +355,7 @@ export default function Dashboard() {
     setStatusMessage("AI가 변환 중입니다...");
 
     try {
+      // 서버에는 항상 image(dataURL) + maskData만 전달 (File 절대 X)
       const maskData = canvasRef.current.getDataURL(
         "image/png",
         false,
@@ -222,15 +365,16 @@ export default function Dashboard() {
         localStorage.getItem("hairfit_token") ||
         localStorage.getItem("token");
 
+      // 모드별 엔드포인트 분기
       const endpoint =
-        mode === "basic"
-          ? `${API_URL}/generate/`
-          : `${API_URL}/generate/fullstyle`;
+        mode === "fullstyle"
+          ? `${API_URL}/generate/fullstyle`
+          : `${API_URL}/generate/`;
 
       const response = await axios.post(
         endpoint,
         {
-          image_url: image, // ✅ 화면에 보이는 최종 방향 그대로
+          image_url: image,
           mask_url: maskData,
           gender,
           age,
@@ -240,7 +384,11 @@ export default function Dashboard() {
         }
       );
 
-      setResult(response.data.result_url);
+      const rawUrl = response.data.result_url as string;
+      // 입력 방향에 맞춰 결과 방향 자동 보정
+      const fixed = await fixResultOrientation(rawUrl, inputOrientation);
+
+      setResult(fixed);
       setCredits(response.data.remaining_credits);
 
       setFakeProgress(100);
@@ -261,17 +409,6 @@ export default function Dashboard() {
     }
   };
 
-  // 모드 버튼 공통 클래스
-  const modeButtonBase =
-    "w-full text-xs md:text-sm px-3 py-2 rounded-lg border transition flex flex-col items-start gap-0.5";
-  const basicActive =
-    "border-indigo-500 bg-indigo-50 text-indigo-700";
-  const basicInactive =
-    "border-gray-200 bg-white text-gray-600 hover:bg-gray-50";
-  const fullActive = "border-purple-500 bg-purple-50 text-purple-700";
-  const fullInactive =
-    "border-gray-200 bg-white text-gray-600 hover:bg-gray-50";
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
       {/* 상단 네비게이션 */}
@@ -286,10 +423,6 @@ export default function Dashboard() {
               <Coins className="text-yellow-500" size={20} />
               <span className="font-bold text-yellow-700">
                 {credits} 크레딧
-              </span>
-              <span className="ml-1 text-[11px] text-gray-500 hidden md:inline">
-                (현재 모드:{" "}
-                {mode === "basic" ? "1크레딧" : "2크레딧"} 사용)
               </span>
             </div>
           </div>
@@ -354,7 +487,7 @@ export default function Dashboard() {
               />
             </label>
 
-            {/* 사진 90도 회전 버튼 */}
+            {/* 수동 회전 버튼 */}
             <button
               type="button"
               onClick={handleRotateImage}
@@ -372,7 +505,7 @@ export default function Dashboard() {
               style={{
                 maxWidth: width,
                 height: height > 0 ? height : 300,
-                touchAction: "pan-y", // 📱 모바일에서 pinch-zoom 방지
+                touchAction: "pan-y",
               }}
             >
               {!image ? (
@@ -448,45 +581,50 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4">2. 옵션 선택</h2>
 
             <div className="space-y-4">
-              {/* 변환 모드 선택 */}
+              {/* 모드 선택 */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  변환 모드
+                  생성 모드
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setMode("basic")}
-                    className={`${modeButtonBase} ${
-                      mode === "basic" ? basicActive : basicInactive
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
+                      mode === "basic"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <span className="font-semibold">
-                      얼굴 중심 (1 크레딧)
+                    <span className="text-[11px] font-semibold">
+                      1 크레딧
                     </span>
+                    <span className="font-medium">얼굴 중심</span>
                     <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴·표정·디테일 위주
+                      헤어는 유지, 얼굴 표정·디테일 위주
                     </span>
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => setMode("full")}
-                    className={`${modeButtonBase} ${
-                      mode === "full" ? fullActive : fullInactive
+                    onClick={() => setMode("fullstyle")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
+                      mode === "fullstyle"
+                        ? "border-purple-500 bg-purple-50 text-purple-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <span className="font-semibold">
-                      얼굴+의상+배경 (2 크레딧)
+                    <span className="text-[11px] font-semibold">
+                      2 크레딧
+                    </span>
+                    <span className="font-medium">
+                      얼굴+의상+배경 프리미엄
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 전체 분위기까지 변경
+                      헤어는 유지하고 전체 분위기까지 변경
                     </span>
                   </button>
                 </div>
-                <p className="mt-2 text-[11px] text-gray-500">
-                  원장님 요청대로, 헤어는 최대한 유지하고 얼굴과 분위기
-                  위주로 변환합니다.
-                </p>
               </div>
 
               <div>
@@ -532,7 +670,7 @@ export default function Dashboard() {
                 </select>
               </div>
 
-              {/* AI 변환 버튼 + 진행 바 */}
+              {/* 생성 버튼 + 프로그레스 */}
               <div className="mt-4">
                 <button
                   onClick={handleGenerate}
@@ -541,9 +679,9 @@ export default function Dashboard() {
                 >
                   {isGenerating
                     ? "AI가 변환 중입니다..."
-                    : mode === "basic"
-                    ? "AI 변환 시작 (1 크레딧 차감)"
-                    : "AI 변환 시작 (2 크레딧 차감)"}
+                    : mode === "fullstyle"
+                    ? "프리미엄 AI 변환 시작 (2 크레딧 차감)"
+                    : "AI 변환 시작 (1 크레딧 차감)"}
                 </button>
 
                 {(isGenerating || fakeProgress > 0) && (
@@ -580,8 +718,7 @@ export default function Dashboard() {
               />
               <a
                 href={result}
-                target="_blank"
-                rel="noreferrer"
+                download
                 className="block w-full text-center bg-gray-800 text-white py-2 rounded-lg hover:bg-black transition flex items-center justify-center gap-2 text-sm md:text-base"
               >
                 <Download size={18} /> 고화질 다운로드
