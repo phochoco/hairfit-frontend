@@ -5,11 +5,10 @@ import CanvasDraw from "react-canvas-draw";
 import axios from "axios";
 import { Upload, Eraser, Download, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
+import EXIF from "exif-js";
 
 const API_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
-
-type Mode = "basic" | "full"; // basic: 1크레딧, full: 2크레딧
 
 export default function Dashboard() {
   const [image, setImage] = useState<string | null>(null);
@@ -31,9 +30,6 @@ export default function Dashboard() {
 
   // 📱 모바일 여부 (브러시 크기 조절용)
   const [isMobile, setIsMobile] = useState(false);
-
-  // 🔀 변환 모드: 기본(1크레딧) / 풀스타일(2크레딧)
-  const [mode, setMode] = useState<Mode>("basic");
 
   useEffect(() => {
     const check = () => {
@@ -58,7 +54,7 @@ export default function Dashboard() {
     if (!isGenerating) return;
 
     const start = Date.now();
-    const total = 10000; // 10초 기준
+    const total = 10000;
 
     setFakeProgress(5);
     setStatusMessage("AI가 변환 중입니다...");
@@ -116,7 +112,7 @@ export default function Dashboard() {
     }
   }, [router]);
 
-  // 📷 이미지 업로드 (File → dataURL → image state만 사용)
+  // 📷 이미지 업로드 (모바일은 EXIF 회전, PC는 원래 방식)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -125,30 +121,102 @@ export default function Dashboard() {
 
     reader.onload = (ev: ProgressEvent<FileReader>) => {
       const result = ev.target?.result;
-      if (!result || typeof result !== "string") return;
+      if (!result) return;
 
       // 새 이미지 업로드 시 마스크 초기화
       canvasRef.current?.clear?.();
 
+      // ✅ 1) PC / 태블릿 넓은 화면: 예전처럼 그대로 사용 (회전 보정 X)
+      if (!isMobile) {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.height / img.width;
+
+          let baseWidth = 500;
+          if (typeof window !== "undefined") {
+            const vw = window.innerWidth;
+            if (vw < 768) {
+              baseWidth = vw - 48;
+            }
+          }
+          const newWidth = Math.min(500, baseWidth);
+          const newHeight = newWidth * ratio;
+
+          setWidth(newWidth);
+          setHeight(newHeight);
+          setImage(result as string);
+        };
+        img.src = result as string;
+        return;
+      }
+
+      // ✅ 2) 모바일: EXIF + 자동 회전 로직 유지
       const img = new Image();
       img.onload = () => {
-        const ratio = img.height / img.width;
+        let w = img.width;
+        let h = img.height;
+
+        // 1) EXIF Orientation 읽기 시도
+        let orientation = 1;
+        try {
+          (EXIF as any).getData(file, function (this: any) {
+            orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+          });
+        } catch (err) {
+          console.warn("EXIF read failed, fallback to auto-rotate");
+        }
+
+        // 2) EXIF 없거나 이상할 때, 화면 비율 기반 자동 감지
+        const autoRotateNeeded = (() => {
+          const isPortraitDisplay = window.innerWidth < window.innerHeight;
+          const orientationMismatch =
+            (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
+          return orientationMismatch;
+        })();
+
+        const needRotate =
+          orientation !== 1 || autoRotateNeeded ? true : false;
+
+        let rotateDeg = 0;
+
+        if (orientation === 6) rotateDeg = 90;
+        else if (orientation === 8) rotateDeg = -90;
+        else if (orientation === 3) rotateDeg = 180;
+        else if (autoRotateNeeded) rotateDeg = 90;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotateDeg * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2);
+
+        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
         let baseWidth = 500;
         if (typeof window !== "undefined") {
           const vw = window.innerWidth;
-          if (vw < 768) {
-            baseWidth = vw - 48;
-          }
+          if (vw < 768) baseWidth = vw - 48;
         }
-        const newWidth = Math.min(500, baseWidth);
-        const newHeight = newWidth * ratio;
+        const displayWidth = Math.min(500, baseWidth);
+        const displayHeight =
+          (canvas.height / canvas.width) * displayWidth;
 
-        setWidth(newWidth);
-        setHeight(newHeight);
-        setImage(result); // ✅ 이 이후로는 항상 이 image만 사용 (File은 잊어버림)
+        setWidth(displayWidth);
+        setHeight(displayHeight);
+        setImage(fixedDataUrl);
       };
-      img.src = result;
+
+      img.src = result as string;
     };
 
     reader.readAsDataURL(file);
@@ -190,7 +258,7 @@ export default function Dashboard() {
       // 새 이미지 + 크기 반영
       setWidth(displayWidth);
       setHeight(displayHeight);
-      setImage(rotatedDataUrl); // ✅ Flux는 항상 이 최종 방향만 본다
+      setImage(rotatedDataUrl);
 
       // 방향을 바꿨으니 기존 마스크는 초기화
       canvasRef.current?.clear?.();
@@ -201,11 +269,7 @@ export default function Dashboard() {
 
   const handleGenerate = async () => {
     if (!image) return alert("사진을 먼저 올려주세요.");
-
-    const cost = mode === "basic" ? 1 : 2;
-    if (credits < cost) {
-      return alert(`${cost} 크레딧이 필요합니다. 크레딧을 충전해 주세요.`);
-    }
+    if (credits <= 0) return alert("크레딧이 부족합니다!");
 
     setLoading(true);
     setIsGenerating(true);
@@ -222,15 +286,10 @@ export default function Dashboard() {
         localStorage.getItem("hairfit_token") ||
         localStorage.getItem("token");
 
-      const endpoint =
-        mode === "basic"
-          ? `${API_URL}/generate/`
-          : `${API_URL}/generate/fullstyle`;
-
       const response = await axios.post(
-        endpoint,
+        `${API_URL}/generate/`,
         {
-          image_url: image, // ✅ 화면에 보이는 최종 방향 그대로
+          image_url: image,
           mask_url: maskData,
           gender,
           age,
@@ -261,17 +320,6 @@ export default function Dashboard() {
     }
   };
 
-  // 모드 버튼 공통 클래스
-  const modeButtonBase =
-    "w-full text-xs md:text-sm px-3 py-2 rounded-lg border transition flex flex-col items-start gap-0.5";
-  const basicActive =
-    "border-indigo-500 bg-indigo-50 text-indigo-700";
-  const basicInactive =
-    "border-gray-200 bg-white text-gray-600 hover:bg-gray-50";
-  const fullActive = "border-purple-500 bg-purple-50 text-purple-700";
-  const fullInactive =
-    "border-gray-200 bg-white text-gray-600 hover:bg-gray-50";
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:p-8">
       {/* 상단 네비게이션 */}
@@ -286,10 +334,6 @@ export default function Dashboard() {
               <Coins className="text-yellow-500" size={20} />
               <span className="font-bold text-yellow-700">
                 {credits} 크레딧
-              </span>
-              <span className="ml-1 text-[11px] text-gray-500 hidden md:inline">
-                (현재 모드:{" "}
-                {mode === "basic" ? "1크레딧" : "2크레딧"} 사용)
               </span>
             </div>
           </div>
@@ -354,7 +398,7 @@ export default function Dashboard() {
               />
             </label>
 
-            {/* 사진 90도 회전 버튼 */}
+            {/* 새로 추가: 사진 90도 회전 버튼 */}
             <button
               type="button"
               onClick={handleRotateImage}
@@ -448,47 +492,6 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4">2. 옵션 선택</h2>
 
             <div className="space-y-4">
-              {/* 변환 모드 선택 */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  변환 모드
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMode("basic")}
-                    className={`${modeButtonBase} ${
-                      mode === "basic" ? basicActive : basicInactive
-                    }`}
-                  >
-                    <span className="font-semibold">
-                      얼굴 중심 (1 크레딧)
-                    </span>
-                    <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴·표정·디테일 위주
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("full")}
-                    className={`${modeButtonBase} ${
-                      mode === "full" ? fullActive : fullInactive
-                    }`}
-                  >
-                    <span className="font-semibold">
-                      얼굴+의상+배경 (2 크레딧)
-                    </span>
-                    <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 전체 분위기까지 변경
-                    </span>
-                  </button>
-                </div>
-                <p className="mt-2 text-[11px] text-gray-500">
-                  원장님 요청대로, 헤어는 최대한 유지하고 얼굴과 분위기
-                  위주로 변환합니다.
-                </p>
-              </div>
-
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   성별
@@ -541,9 +544,7 @@ export default function Dashboard() {
                 >
                   {isGenerating
                     ? "AI가 변환 중입니다..."
-                    : mode === "basic"
-                    ? "AI 변환 시작 (1 크레딧 차감)"
-                    : "AI 변환 시작 (2 크레딧 차감)"}
+                    : "AI 변환 시작 (1 크레딧 차감)"}
                 </button>
 
                 {(isGenerating || fakeProgress > 0) && (
