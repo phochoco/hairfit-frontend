@@ -29,7 +29,10 @@ export default function Dashboard() {
     "neutral" | "soft_smile" | "bright_smile" | "professional"
   >("neutral");
 
-  const [styleMode, setStyleMode] = useState("natural_model"); // 기본값 C
+  // 👇 스타일 모드 상태 (A/B/C)
+  const [styleMode, setStyleMode] = useState<
+    "idol_female" | "idol_male" | "natural_model"
+  >("natural_model"); // 기본값 C
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -48,7 +51,7 @@ export default function Dashboard() {
 
   // 🔵 프롬프트 버전 (V3 확장)
   const [promptVersion, setPromptVersion] =
-  useState<"v3" | "v3_random">("v3");
+    useState<"v3" | "v3_random">("v3");
 
   // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
@@ -435,28 +438,26 @@ export default function Dashboard() {
         localStorage.getItem("hairfit_token") ||
         localStorage.getItem("token");
 
-            const endpoint =
+      const endpoint =
         mode === "fullstyle"
           ? `${API_URL}/generate/fullstyle`
           : `${API_URL}/generate/`;
 
       console.log("[handleGenerate] endpoint:", endpoint);
 
-      // 🔥 payload 구성
+      // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
       const payload: any = {
         image_url: image,
         mask_url: maskData,
         gender,
         age,
-        expression,        // 표정 옵션
-        style_mode: styleMode, // ⭐ 스타일 모드 A/B/C 전달
+        expression, // 표정 옵션
+        style_mode: styleMode, // ⭐ 스타일 모드(A/B/C) 백엔드로 전달
       };
 
-      // basic 모드에서만 prompt_version 사용 (v3 / v3_random)
       if (mode === "basic") {
         payload.prompt_version = promptVersion;
       }
-
 
       console.log("[handleGenerate] sending payload:", {
         ...payload,
@@ -669,24 +670,105 @@ export default function Dashboard() {
           <div className="bg-white p-4 md:p-6 rounded-2xl shadow-lg">
             <h2 className="text-lg font-semibold mb-4">2. 옵션 선택</h2>
 
-                       <div className="space-y-4">
-              {/* 모드 선택 */}
+            <div className="space-y-4">
+              {/* 크레딧 모드 */}
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  크레딧 모드
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMode("basic")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
+                      mode === "basic"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="text-[11px] font-semibold">
+                      1 크레딧
+                    </span>
+                    <span className="font-medium">얼굴 중심</span>
+                    <span className="text-[11px] text-gray-500">
+                      헤어는 유지, 얼굴 표정·디테일 위주
+                    </span>
+                  </button>
+
+                  {/* 2크레딧 fullstyle 모드 */}
+                  <button
+                    type="button"
+                    onClick={() => setMode("fullstyle")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left text-xs md:text-sm ${
+                      mode === "fullstyle"
+                        ? "border-purple-500 bg-purple-50 text-purple-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="text-[11px] font-semibold">
+                      2 크레딧
+                    </span>
+                    <span className="font-medium">
+                      얼굴+의상+배경 프리미엄
+                    </span>
+                    <span className="text-[11px] text-gray-500">
+                      헤어는 유지하고 전체 분위기까지 변경
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 생성 모드 (V3 프롬프트) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   생성 모드
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {/* ... 1크레딧 / 2크레딧 버튼 ... */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
+                  {/* V3 기본 */}
+                  <button
+                    type="button"
+                    onClick={() => setPromptVersion("v3")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                      promptVersion === "v3"
+                        ? "border-slate-800 bg-slate-900 text-white"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-semibold">
+                      V3 강화 버전 (추천)
+                    </span>
+                    <span className="text-[11px]">
+                      헤어 유지 · 얼굴만 자연스럽게 교체.
+                    </span>
+                  </button>
+
+                  {/* V3 랜덤 */}
+                  <button
+                    type="button"
+                    onClick={() => setPromptVersion("v3_random")}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
+                      promptVersion === "v3_random"
+                        ? "border-slate-800 bg-slate-900 text-white"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-semibold">
+                      V3 랜덤 인물 스타일러
+                    </span>
+                    <span className="text-[11px]">
+                      헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드.
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              {/* 🟣 스타일 모드 선택 (A/B/C) */}
+              {/* 스타일 모드 (A/B/C) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   스타일 모드
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs md:text-sm">
-                  {/* A: 여자 아이돌 */}
+                  {/* A. 여자 아이돌 */}
                   <button
                     type="button"
                     onClick={() => setStyleMode("idol_female")}
@@ -697,12 +779,12 @@ export default function Dashboard() {
                     }`}
                   >
                     <span className="font-semibold">A. 여자 아이돌</span>
-                    <span className="text-[11px] text-gray-500">
+                    <span className="text-[11px]">
                       aespa / IVE / NewJeans 느낌, 화보 스타일
                     </span>
                   </button>
 
-                  {/* B: 남자 아이돌 */}
+                  {/* B. 남자 아이돌 */}
                   <button
                     type="button"
                     onClick={() => setStyleMode("idol_male")}
@@ -713,12 +795,12 @@ export default function Dashboard() {
                     }`}
                   >
                     <span className="font-semibold">B. 남자 아이돌</span>
-                    <span className="text-[11px] text-gray-500">
+                    <span className="text-[11px]">
                       BTS / SEVENTEEN 느낌, 또렷한 아이돌 얼굴
                     </span>
                   </button>
 
-                  {/* C: 내추럴 (기본값) */}
+                  {/* C. 내추럴 모델 */}
                   <button
                     type="button"
                     onClick={() => setStyleMode("natural_model")}
@@ -728,57 +810,17 @@ export default function Dashboard() {
                         : "border-gray-200 bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <span className="font-semibold">C. 내추럴 모델 (기본)</span>
-                    <span className="text-[11px] text-gray-500">
+                    <span className="font-semibold">
+                      C. 내추럴 모델 (기본)
+                    </span>
+                    <span className="text-[11px]">
                       과하지 않은 자연스러운 패션 모델 톤
                     </span>
                   </button>
                 </div>
               </div>
 
-              {/* 👇 표정 선택 블록 */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  표정
-                </label>
-                {/* ... 표정 버튼들 ... */}
-              </div>
-
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
-  {/* V3 기본 */}
-  <button
-    type="button"
-    onClick={() => setPromptVersion("v3")}
-    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-      promptVersion === "v3"
-        ? "border-slate-800 bg-slate-900 text-white"
-        : "border-gray-200 bg-gray-50 text-gray-700"
-    }`}
-  >
-    <span className="font-semibold">V3 강화 버전 (추천)</span>
-    <span className="text-[11px]">
-      헤어 유지 · 얼굴만 자연스럽게 교체.
-    </span>
-  </button>
-
-  {/* V3 랜덤 */}
-  <button
-    type="button"
-    onClick={() => setPromptVersion("v3_random")}
-    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-      promptVersion === "v3_random"
-        ? "border-slate-800 bg-slate-900 text-white"
-        : "border-gray-200 bg-gray-50 text-gray-700"
-    }`}
-  >
-    <span className="font-semibold">V3 랜덤 인물 스타일러</span>
-    <span className="text-[11px]">
-      헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드.
-    </span>
-  </button>
-</div>
-
-              {/* 👇 표정 선택 블록 추가 */}
+              {/* 표정 선택 */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   표정
