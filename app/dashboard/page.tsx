@@ -25,6 +25,22 @@ export default function Dashboard() {
   const [age, setAge] = useState("30대");
   const [backgroundMode, setBackgroundMode] = useState<"natural" | "studio">("natural");
 
+// 자동 마스크 로딩 함수
+const loadAutoMaskToCanvas = async (maskUrl: string) => {
+  return new Promise<void>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const ctx = canvasRef.current?.ctx.drawing;
+      if (ctx) {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(img, 0, 0, width, height);
+      }
+      resolve();
+    };
+    img.src = maskUrl;
+  });
+};
 
 
     // 👇 표정 상태
@@ -249,6 +265,19 @@ export default function Dashboard() {
           getOrientation(canvas.width, canvas.height)
         );
       };
+
+// 🔥 자동 마스크 요청
+try {
+  const res = await axios.post(`${API_URL}/auto-mask`, {
+    image_url: fixedDataUrl,
+  });
+
+  if (res.data.mask_url) {
+    await loadAutoMaskToCanvas(res.data.mask_url);
+  }
+} catch (err) {
+  console.error("자동 마스크 생성 실패", err);
+}
 
       img.src = result as string;
     };
@@ -561,7 +590,7 @@ export default function Dashboard() {
 
       {/* 본문 영역 */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        {/* 왼쪽: 작업 공간 */}
+                {/* 왼쪽: 작업 공간 */}
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             1. 사진 업로드 & 변경할 부분 색칠
@@ -590,6 +619,11 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* 🔹 자동 마스크 안내 문구 추가 */}
+          <p className="mb-3 text-xs text-gray-500">
+            AI가 얼굴을 자동으로 선택했습니다. 마음에 안 드는 부분만 칠하거나 지우면 됩니다.
+          </p>
+
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
             <div
@@ -600,6 +634,7 @@ export default function Dashboard() {
                 touchAction: "pan-y",
               }}
             >
+
               {!image ? (
                 <p className="text-gray-400 text-sm md:text-base">
                   사진을 올려주세요
