@@ -165,7 +165,7 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
 
     const reader = new FileReader();
 
-    reader.onload = (ev: ProgressEvent<FileReader>) => {
+    reader.onload = async (ev: ProgressEvent<FileReader>) => {
       const result = ev.target?.result;
       if (!result) return;
 
