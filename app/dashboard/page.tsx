@@ -23,6 +23,9 @@ export default function Dashboard() {
   const [height, setHeight] = useState(400);
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
+  const [backgroundMode, setBackgroundMode] = useState<"natural" | "studio">("natural");
+
+
 
     // 👇 표정 상태
   const [expression, setExpression] = useState<
@@ -444,16 +447,18 @@ export default function Dashboard() {
       console.log("[handleGenerate] endpoint:", endpoint);
 
             // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
-      const payload: any = {
+            const payload: any = {
         image_url: image,
         mask_url: maskData,
         gender,
         age,
-        expression, // 표정 옵션
+        expression,
       };
 
       if (mode === "basic") {
         payload.prompt_version = promptVersion;
+      } else if (mode === "fullstyle") {
+        payload.background_mode = backgroundMode;  // ⭐ 추가
       }
 
       console.log("[handleGenerate] sending payload:", {
@@ -759,7 +764,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-                            {/* 👇 표정 선택 블록 (2개로 축소) */}
+                                          {/* 👇 표정 선택 블록 (2개로 축소) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   표정
@@ -797,6 +802,49 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* 3-3. 배경 모드 (2크레딧 전용) */}
+              {mode === "fullstyle" && (
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">
+                    배경 모드 (프리미엄)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                    <button
+                      type="button"
+                      onClick={() => setBackgroundMode("natural")}
+                      className={`rounded-xl border p-2 text-left ${
+                        backgroundMode === "natural"
+                          ? "border-purple-500 bg-purple-50 text-purple-800"
+                          : "border-gray-200 bg-gray-50 text-gray-700"
+                      }`}
+                    >
+                      <div className="font-semibold">
+                        자연스러운 배경 교체
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        현재 구도 유지, 살짝 다른 인테리어/풍경으로 교체
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBackgroundMode("studio")}
+                      className={`rounded-xl border p-2 text-left ${
+                        backgroundMode === "studio"
+                          ? "border-purple-500 bg-purple-50 text-purple-800"
+                          : "border-gray-200 bg-gray-50 text-gray-700"
+                      }`}
+                    >
+                      <div className="font-semibold">
+                        스튜디오 화이트 배경
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        배경 삭제 후, 스튜디오 느낌의 화이트톤 배경
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
