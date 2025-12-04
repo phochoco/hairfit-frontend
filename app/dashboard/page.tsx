@@ -23,6 +23,10 @@ export default function Dashboard() {
   const [height, setHeight] = useState(400);
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
+  // 👇 표정 상태 추가
+  const [expression, setExpression] = useState<
+    "neutral" | "soft_smile" | "bright_smile" | "professional"
+  >("neutral");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -434,12 +438,13 @@ export default function Dashboard() {
 
       console.log("[handleGenerate] endpoint:", endpoint);
 
-      // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
+            // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
       const payload: any = {
         image_url: image,
         mask_url: maskData,
         gender,
         age,
+        expression, // 👈 표정 옵션 추가
       };
 
       if (mode === "basic") {
@@ -705,7 +710,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
   {/* V3 기본 */}
   <button
     type="button"
@@ -738,6 +743,74 @@ export default function Dashboard() {
     </span>
   </button>
 </div>
+
+              {/* 👇 표정 선택 블록 추가 */}
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  표정
+                </label>
+                <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setExpression("neutral")}
+                    className={`rounded-xl border p-2 text-left ${
+                      expression === "neutral"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <div className="font-semibold">기본 표정</div>
+                    <div className="text-[11px] text-gray-500">
+                      자연스럽고 무난한 표정
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpression("soft_smile")}
+                    className={`rounded-xl border p-2 text-left ${
+                      expression === "soft_smile"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <div className="font-semibold">부드러운 미소</div>
+                    <div className="text-[11px] text-gray-500">
+                      입을 다문 상태의 은은한 미소
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpression("bright_smile")}
+                    className={`rounded-xl border p-2 text-left ${
+                      expression === "bright_smile"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <div className="font-semibold">밝은 미소</div>
+                    <div className="text-[11px] text-gray-500">
+                      이가 살짝 보이는 자연스러운 미소
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpression("professional")}
+                    className={`rounded-xl border p-2 text-left ${
+                      expression === "professional"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <div className="font-semibold">프로페셔널</div>
+                    <div className="text-[11px] text-gray-500">
+                      단정하고 차분한 인상
+                    </div>
+                  </button>
+                </div>
+              </div>
 
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
