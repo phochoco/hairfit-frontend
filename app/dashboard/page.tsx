@@ -24,17 +24,15 @@ export default function Dashboard() {
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
 
-  // 👇 표정 상태 추가
+    // 👇 표정 상태
   const [expression, setExpression] = useState<
     "neutral" | "soft_smile" | "bright_smile" | "professional"
   >("neutral");
 
-  // 👇 스타일 모드 상태 (A/B/C)
-  const [styleMode, setStyleMode] = useState<
-    "idol_female" | "idol_male" | "natural_model"
-  >("natural_model"); // 기본값 C
+  // 👉 스타일 모드 삭제 (아이돌/네추럴 통합)
 
   const [loading, setLoading] = useState(false);
+
   const [result, setResult] = useState<string | null>(null);
 
   const [credits, setCredits] = useState(0);
@@ -445,14 +443,13 @@ export default function Dashboard() {
 
       console.log("[handleGenerate] endpoint:", endpoint);
 
-      // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
+            // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
       const payload: any = {
         image_url: image,
         mask_url: maskData,
         gender,
         age,
         expression, // 표정 옵션
-        style_mode: styleMode, // ⭐ 스타일 모드(A/B/C) 백엔드로 전달
       };
 
       if (mode === "basic") {
@@ -718,7 +715,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 생성 모드 (V3 프롬프트) */}
+                            {/* 생성 모드 (V3 프롬프트) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   생성 모드
@@ -762,66 +759,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 스타일 모드 (A/B/C) */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  스타일 모드
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs md:text-sm">
-                  {/* A. 여자 아이돌 */}
-                  <button
-                    type="button"
-                    onClick={() => setStyleMode("idol_female")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      styleMode === "idol_female"
-                        ? "border-pink-500 bg-pink-50 text-pink-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">A. 여자 아이돌</span>
-                    <span className="text-[11px]">
-                      aespa / IVE / NewJeans 느낌, 화보 스타일
-                    </span>
-                  </button>
-
-                  {/* B. 남자 아이돌 */}
-                  <button
-                    type="button"
-                    onClick={() => setStyleMode("idol_male")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      styleMode === "idol_male"
-                        ? "border-blue-500 bg-blue-50 text-blue-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">B. 남자 아이돌</span>
-                    <span className="text-[11px]">
-                      BTS / SEVENTEEN 느낌, 또렷한 아이돌 얼굴
-                    </span>
-                  </button>
-
-                  {/* C. 내추럴 모델 */}
-                  <button
-                    type="button"
-                    onClick={() => setStyleMode("natural_model")}
-                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                      styleMode === "natural_model"
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <span className="font-semibold">
-                      C. 내추럴 모델 (기본)
-                    </span>
-                    <span className="text-[11px]">
-                      과하지 않은 자연스러운 패션 모델 톤
-                    </span>
-                  </button>
-                </div>
-              </div>
-
               {/* 표정 선택 */}
               <div>
+
                 <label className="block text-sm text-gray-600 mb-1">
                   표정
                 </label>
