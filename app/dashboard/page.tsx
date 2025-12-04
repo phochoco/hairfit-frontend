@@ -26,7 +26,7 @@ export default function Dashboard() {
 
     // 👇 표정 상태
   const [expression, setExpression] = useState<
-    "neutral" | "soft_smile" | "bright_smile" | "professional"
+    "neutral" | "soft_smile"
   >("neutral");
 
   // 👉 스타일 모드 삭제 (아이돌/네추럴 통합)
@@ -759,9 +759,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 표정 선택 */}
+                            {/* 👇 표정 선택 블록 (2개로 축소) */}
               <div>
-
                 <label className="block text-sm text-gray-600 mb-1">
                   표정
                 </label>
@@ -795,38 +794,9 @@ export default function Dashboard() {
                       입을 다문 상태의 은은한 미소
                     </div>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setExpression("bright_smile")}
-                    className={`rounded-xl border p-2 text-left ${
-                      expression === "bright_smile"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <div className="font-semibold">밝은 미소</div>
-                    <div className="text-[11px] text-gray-500">
-                      이가 살짝 보이는 자연스러운 미소
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setExpression("professional")}
-                    className={`rounded-xl border p-2 text-left ${
-                      expression === "professional"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <div className="font-semibold">프로페셔널</div>
-                    <div className="text-[11px] text-gray-500">
-                      단정하고 차분한 인상
-                    </div>
-                  </button>
                 </div>
               </div>
+
 
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
