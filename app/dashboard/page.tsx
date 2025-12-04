@@ -12,6 +12,8 @@ const API_URL =
 
 // 세로/가로 방향 타입
 type Orientation = "portrait" | "landscape";
+type Expression = "neutral" | "soft_smile";
+type BackgroundMode = "scene" | "studio";
 
 const getOrientation = (w: number, h: number): Orientation =>
   h >= w ? "portrait" : "landscape";
@@ -23,35 +25,11 @@ export default function Dashboard() {
   const [height, setHeight] = useState(400);
   const [gender, setGender] = useState("male");
   const [age, setAge] = useState("30대");
-  const [backgroundMode, setBackgroundMode] = useState<"natural" | "studio">("natural");
 
-// 자동 마스크 로딩 함수
-const loadAutoMaskToCanvas = async (maskUrl: string) => {
-  return new Promise<void>((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const ctx = canvasRef.current?.ctx.drawing;
-      if (ctx) {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.drawImage(img, 0, 0, width, height);
-      }
-      resolve();
-    };
-    img.src = maskUrl;
-  });
-};
-
-
-    // 👇 표정 상태
-  const [expression, setExpression] = useState<
-    "neutral" | "soft_smile"
-  >("neutral");
-
-  // 👉 스타일 모드 삭제 (아이돌/네추럴 통합)
+  // 표정 (2가지 옵션만)
+  const [expression, setExpression] = useState<Expression>("neutral");
 
   const [loading, setLoading] = useState(false);
-
   const [result, setResult] = useState<string | null>(null);
 
   const [credits, setCredits] = useState(0);
@@ -66,9 +44,13 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
   // 1크레딧 / 2크레딧 모드
   const [mode, setMode] = useState<"basic" | "fullstyle">("basic");
 
-  // 🔵 프롬프트 버전 (V3 확장)
+  // 프롬프트 버전 (V3 / V3 랜덤) — basic 모드에서만 사용
   const [promptVersion, setPromptVersion] =
     useState<"v3" | "v3_random">("v3");
+
+  // 2크레딧 전용: 배경 모드
+  const [backgroundMode, setBackgroundMode] =
+    useState<BackgroundMode>("scene");
 
   // 모바일 여부
   const [isMobile, setIsMobile] = useState(false);
@@ -165,7 +147,161 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
 
     const reader = new FileReader();
 
-    reader.onload
+    reader.onload = (ev: ProgressEvent<FileReader>) => {
+      const result = ev.target?.result;
+      if (!result) return;
+
+      // 새 이미지 업로드 시 마스크 초기화
+      canvasRef.current?.clear?.();
+
+      // ✅ PC / 태블릿: EXIF 보정 없이 그대로 사용
+      if (!isMobile) {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.height / img.width;
+
+          let baseWidth = 500;
+          if (typeof window !== "undefined") {
+            const vw = window.innerWidth;
+            if (vw < 768) {
+              baseWidth = vw - 48;
+            }
+          }
+          const newWidth = Math.min(500, baseWidth);
+          const newHeight = newWidth * ratio;
+
+          setWidth(newWidth);
+          setHeight(newHeight);
+          setImage(result as string);
+          setInputOrientation(getOrientation(img.width, img.height));
+        };
+        img.src = result as string;
+        return;
+      }
+
+      // ✅ 모바일: EXIF + 자동 회전 로직
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+
+        // 1) EXIF Orientation 읽기
+        let orientation = 1;
+        try {
+          (EXIF as any).getData(file, function (this: any) {
+            orientation = (EXIF as any).getTag(this, "Orientation") || 1;
+          });
+        } catch (err) {
+          console.warn("EXIF read failed, fallback to auto-rotate");
+        }
+
+        // 2) 화면 비율 기반 자동 감지
+        const autoRotateNeeded = (() => {
+          const isPortraitDisplay = window.innerWidth < window.innerHeight;
+          const orientationMismatch =
+            (w > h && isPortraitDisplay) || (h > w && !isPortraitDisplay);
+          return orientationMismatch;
+        })();
+
+        const needRotate =
+          orientation !== 1 || autoRotateNeeded ? true : false;
+
+        let rotateDeg = 0;
+
+        if (orientation === 6) rotateDeg = 90;
+        else if (orientation === 8) rotateDeg = -90;
+        else if (orientation === 3) rotateDeg = 180;
+        else if (autoRotateNeeded) rotateDeg = 90;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        if (needRotate && (rotateDeg === 90 || rotateDeg === -90)) {
+          canvas.width = h;
+          canvas.height = w;
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotateDeg * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2);
+
+        const fixedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+        let baseWidth = 500;
+        if (typeof window !== "undefined") {
+          const vw = window.innerWidth;
+          if (vw < 768) baseWidth = vw - 48;
+        }
+        const displayWidth = Math.min(500, baseWidth);
+        const displayHeight =
+          (canvas.height / canvas.width) * displayWidth;
+
+        setWidth(displayWidth);
+        setHeight(displayHeight);
+        setImage(fixedDataUrl);
+        setInputOrientation(
+          getOrientation(canvas.width, canvas.height)
+        );
+      };
+
+      img.src = result as string;
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // ↻ 업로드 후 수동 90° 회전 (PC/모바일 공통) — 항상 image를 덮어쓰기
+  const handleRotateImage = () => {
+    if (!image) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const w = img.width;
+      const h = img.height;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // 90도 회전 → 가로/세로 스왑
+      canvas.width = h;
+      canvas.height = w;
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((90 * Math.PI) / 180);
+      ctx.drawImage(img, -w / 2, -h / 2);
+
+      const rotatedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+      let baseWidth = 500;
+      if (typeof window !== "undefined") {
+        const vw = window.innerWidth;
+        if (vw < 768) baseWidth = vw - 48;
+      }
+      const displayWidth = Math.min(500, baseWidth);
+      const displayHeight =
+        (canvas.height / canvas.width) * displayWidth;
+
+      // 화면에 보이는 이미지 = 서버로 업로드되는 유일한 이미지
+      setWidth(displayWidth);
+      setHeight(displayHeight);
+      setImage(rotatedDataUrl);
+
+      // 방향 토글
+      setInputOrientation((prev) =>
+        prev === "portrait" ? "landscape" : "portrait"
+      );
+
+      // 방향이 바뀌었으니 마스크 초기화
+      canvasRef.current?.clear?.();
+    };
+
+    img.src = image;
+  };
 
   // 결과 이미지 방향을 입력 방향에 맞춰 자동 보정 + 로그/에러 방어
   const fixResultOrientation = (
@@ -308,8 +444,8 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
 
       console.log("[handleGenerate] endpoint:", endpoint);
 
-            // 🔥 payload 구성 (basic 모드에서만 prompt_version 전송)
-            const payload: any = {
+      // 🔥 payload 구성
+      const payload: any = {
         image_url: image,
         mask_url: maskData,
         gender,
@@ -319,8 +455,9 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
 
       if (mode === "basic") {
         payload.prompt_version = promptVersion;
-      } else if (mode === "fullstyle") {
-        payload.background_mode = backgroundMode;  // ⭐ 추가
+      } else {
+        // fullstyle 모드 전용 옵션
+        payload.background_mode = backgroundMode;
       }
 
       console.log("[handleGenerate] sending payload:", {
@@ -423,7 +560,7 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
 
       {/* 본문 영역 */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                {/* 왼쪽: 작업 공간 */}
+        {/* 왼쪽: 작업 공간 */}
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             1. 사진 업로드 & 변경할 부분 색칠
@@ -452,11 +589,6 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
             </button>
           </div>
 
-          {/* 🔹 자동 마스크 안내 문구 추가 */}
-          <p className="mb-3 text-xs text-gray-500">
-            AI가 얼굴을 자동으로 선택했습니다. 마음에 안 드는 부분만 칠하거나 지우면 됩니다.
-          </p>
-
           {/* 캔버스 영역 */}
           <div className="flex justify-center">
             <div
@@ -467,7 +599,6 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                 touchAction: "pan-y",
               }}
             >
-
               {!image ? (
                 <p className="text-gray-400 text-sm md:text-base">
                   사진을 올려주세요
@@ -541,10 +672,10 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
             <h2 className="text-lg font-semibold mb-4">2. 옵션 선택</h2>
 
             <div className="space-y-4">
-              {/* 크레딧 모드 */}
+              {/* 모드 선택 */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  크레딧 모드
+                  생성 모드
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
@@ -561,7 +692,7 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                     </span>
                     <span className="font-medium">얼굴 중심</span>
                     <span className="text-[11px] text-gray-500">
-                      헤어는 유지, 얼굴 표정·디테일 위주
+                      헤어는 유지, 얼굴 디테일 위주
                     </span>
                   </button>
 
@@ -588,11 +719,8 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                 </div>
               </div>
 
-                            {/* 생성 모드 (V3 프롬프트) */}
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  생성 모드
-                </label>
+              {/* 프롬프트 버전 선택 (basic 모드 전용) */}
+              {mode === "basic" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
                   {/* V3 기본 */}
                   <button
@@ -604,11 +732,9 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                         : "border-gray-200 bg-gray-50 text-gray-700"
                     }`}
                   >
-                    <span className="font-semibold">
-                      V3 강화 버전 (추천)
-                    </span>
+                    <span className="font-semibold">V3 강화 버전 (추천)</span>
                     <span className="text-[11px]">
-                      헤어 유지 · 얼굴만 자연스럽게 교체.
+                      헤어 유지 · 얼굴만 자연스럽게 교체
                     </span>
                   </button>
 
@@ -626,13 +752,13 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                       V3 랜덤 인물 스타일러
                     </span>
                     <span className="text-[11px]">
-                      헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드.
+                      헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드
                     </span>
                   </button>
                 </div>
-              </div>
+              )}
 
-                                          {/* 👇 표정 선택 블록 (2개로 축소) */}
+              {/* 표정 선택 (2가지) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   표정
@@ -670,27 +796,25 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                 </div>
               </div>
 
-              {/* 3-3. 배경 모드 (2크레딧 전용) */}
+              {/* 2크레딧 전용: 배경 모드 */}
               {mode === "fullstyle" && (
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">
-                    배경 모드 (프리미엄)
+                    배경 모드
                   </label>
                   <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                     <button
                       type="button"
-                      onClick={() => setBackgroundMode("natural")}
+                      onClick={() => setBackgroundMode("scene")}
                       className={`rounded-xl border p-2 text-left ${
-                        backgroundMode === "natural"
+                        backgroundMode === "scene"
                           ? "border-purple-500 bg-purple-50 text-purple-800"
                           : "border-gray-200 bg-gray-50 text-gray-700"
                       }`}
                     >
-                      <div className="font-semibold">
-                        자연스러운 배경 교체
-                      </div>
+                      <div className="font-semibold">장면 유지형</div>
                       <div className="text-[11px] text-gray-500">
-                        현재 구도 유지, 살짝 다른 인테리어/풍경으로 교체
+                        현재 장면 느낌을 살려 자연스럽게 교체
                       </div>
                     </button>
 
@@ -703,17 +827,16 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                           : "border-gray-200 bg-gray-50 text-gray-700"
                       }`}
                     >
-                      <div className="font-semibold">
-                        스튜디오 화이트 배경
-                      </div>
+                      <div className="font-semibold">스튜디오형</div>
                       <div className="text-[11px] text-gray-500">
-                        배경 삭제 후, 스튜디오 느낌의 화이트톤 배경
+                        화이트/톤온톤 배경 + 자연스러운 그림자
                       </div>
                     </button>
                   </div>
                 </div>
               )}
 
+              {/* 성별 */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   성별
@@ -742,6 +865,7 @@ const loadAutoMaskToCanvas = async (maskUrl: string) => {
                 </div>
               </div>
 
+              {/* 연령대 */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
                   연령대
