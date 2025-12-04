@@ -680,41 +680,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 🔵 V3 프롬프트 버전 선택 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
-                {/* V3 기본 */}
-                <button
-                  type="button"
-                  onClick={() => setPromptVersion("v3")}
-                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                    promptVersion === "v3"
-                      ? "border-slate-800 bg-slate-900 text-white"
-                      : "border-gray-200 bg-gray-50 text-gray-700"
-                  }`}
-                >
-                  <span className="font-semibold">V3 강화 버전 (추천)</span>
-                  <span className="text-[11px]">
-                    헤어 유지 · 얼굴만 자연스럽게 교체.
-                  </span>
-                </button>
-
-                {/* V3 랜덤 */}
-                <button
-                  type="button"
-                  onClick={() => setPromptVersion("v3_random")}
-                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left ${
-                    promptVersion === "v3_random"
-                      ? "border-slate-800 bg-slate-900 text-white"
-                      : "border-gray-200 bg-gray-50 text-gray-700"
-                  }`}
-                >
-                  <span className="font-semibold">V3 랜덤 인물 스타일러</span>
-                  <span className="text-[11px]">
-                    헤어 유지 · 매번 다른 얼굴, 초상권 안전 모드.
-                  </span>
-                </button>
-              </div>
-
               {/* 🟣 스타일 모드 선택 (A/B/C) */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
